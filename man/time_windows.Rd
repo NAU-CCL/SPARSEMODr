@@ -1,0 +1,138 @@
+\name{time_windows}
+\alias{time_windows}
+%- Also NEED an '\alias' for EACH other topic documented here.
+\title{
+    Time Windows Data Structure
+}
+\description{
+    The SPARSEMODr models allow for users to dynamically update transmission rates and movement dynamics across the course of the outbreak. These time-varying parameter values must then be compiled into a \code{time_windows} object.
+
+    A \code{time_windows} object is a set of data across multiple vectors including time-varying R0, also known as the effective reproduction number (R-eff); a parameter that helps define the range of movement; a parameter that defines the frequency of movement between focal populations; a parameter that constrains the impact of hosts that immigrate from outside of the focal populations; and a method to define the dates over which the parameters fluctuate. Each vector must have the same number of elements, which corresponds to the total number of days in the model simulation.
+
+    When specifying dates for each entry, there are three options, but only one of which may be used. See details below.
+    \enumerate{
+        \item{Providing a vector for \code{window_length},}
+        \item{Providing a vector each for \code{start_dates} and \code{end_dates},}
+        \item{Providing a vector for \code{daily}.}
+    }
+
+}
+\usage{
+    time_windows(
+        r0=NULL,
+        dist_param=NULL,
+        m=NULL,
+        imm_frac=NULL,
+        hosp_rate=NULL,
+        recov_hosp=NULL,
+        icu_rate=NULL,
+        death_rate=NULL,
+        window_length=NULL,
+        start_dates=NULL,
+        end_dates=NULL,
+        daily=NULL
+    )
+}
+%- maybe also 'usage' for other objects documented here.
+\arguments{
+    \item{r0}{
+        \emph{required} - A numeric vector of the time-varying R-naught.
+    }
+    \item{dist_param}{
+        \emph{required} - A numeric vector of the \code{dist_param} that is used to calculate the dispersal kernal (see details below).
+    }
+    \item{m}{
+        \emph{required} - A numeric vector of the \code{m} parameter. The inverse of \code{m} is the average time between individuals moving away from their focal population (see details below).
+    }
+    \item{imm_frac}{
+        \emph{required} - A numeric vector. This parameter corresponds to the fraction of the focal population (between 0 and 1) that may be comprised of immigrants from outside of the system (i.e., immigrants that are not from any of the supplied populations in \code{input_pop_N} from \code{\link{model_interface}}); see details below.
+    }
+    \item{hosp_rate}{
+        A numeric vector. Proportion of symptomatic individuals entering hospitalization. Default value is 0.175. Must be greater than zero and less than or equal to one.
+    }
+    \item{recov_hosp}{
+        A numeric vector. Recovery rate of hospitalized individuals. Default value is 1/7.0. Must be greater than or equal to zero. Values above one are unusual.
+    }
+    \item{icu_rate}{
+        A numeric vector. Proportion of hospitalized individuals entering ICU. Default value is 0.20. Must be greater than zero and less than or equal to one.
+    }
+    \item{death_rate}{
+        A numeric vector. Proportion of individuals who do not recover in ICU. Default value is 0.60. Must be greater than zero and less than or equal to one.
+    }
+    \item{window_length}{
+        An integer vector supplying the number of days in each time window (see details below).
+    }
+    \item{start_dates}{
+        A vector of Date objects that corresponds to the starting date of each time window. If supplied, \code{end_dates} must also be supplied (see details below).
+    }
+    \item{end_dates}{
+        A vector of Date objects that corresponds to the ending dates of each time window. If supplied \code{start_dates} must also be supplied (see details below).
+    }
+    \item{daily}{
+        A vector of Date objects that is sequential and complete, encompassing all dates from the start of the outbreak to the end of the outbreak (see details below).
+    }
+}
+\details{
+
+    See \code{\link{Time-varying R0}} for descriptions of parameter \code{r0}, and see \code{\link{Movement}} for descriptions of \code{m} and \code{dist_param}.
+
+    Defining time window durations. One of the following options is required to define the duration of each time window: \code{window_length}, or \code{start_dates} AND \code{end_dates}, or \code{daily}.
+
+    Use \code{window_length} when you want to specify the length of each time window by the number of days.
+
+    Use \code{start_dates} AND \code{end_dates} when you want to define a time window by its starting and ending dates. A start date may not overlap with an end date, and there can be no gaps between the end date and the subsequent start date.
+
+    Use \code{daily} when you want to update parameters every day of the simulation. In this mode, each time window has a length of one day.
+}
+\value{
+    Returns a named list of vectors that must be supplied to \code{\link{model_interface}}.
+}
+\author{
+Seth Borkovec, \email{stb224@nau.edu}; Joseph Mihaljevic, \email{joseph.mihaljevic@nau.edu}
+}
+
+%% ~Make other sections like Warning with \section{Warning }{....} ~
+
+\examples{
+
+## Data set for the examples: (All examples include 5 time windows)
+input_r0 <-             c(   2.5,   2.0,   0.8,   0.8,   1.5)
+input_dist_param <-     c(   200,   200,    20,   150,   150)
+input_m <-              c( 0.002, 0.002, 0.002,  0.02,  0.02)
+input_imm_frac <-       c(   0.0,   0.0,   0.0,  0.02,  0.02)
+input_window_length <-  c(    10,    35,    46,    81,    40)
+input_start_dates <-    c(seq(as.Date("2020-07-09"), by=10, len=5))
+input_end_dates <-      c(seq(as.Date("2020-07-18"), by=10, len=5))
+input_daily <-          c(seq(as.Date("2020-07-09"), by=1, len=5))
+
+## Example using window_length:
+### input_window_length defines the number of days
+### that each value of the other parameters is repeated.
+tw <- time_windows(r0            = input_r0,
+                   dist_param    = input_dist_param,
+                   m             = input_m,
+                   imm_frac      = input_imm_frac,
+                   window_length = input_window_length)
+
+## Example using start_dates with end_dates:
+### Five time windows, each with 10 days
+tw <- time_windows(r0           = input_r0,
+                   dist_param   = input_dist_param,
+                   m            = input_m,
+                   imm_frac     = input_imm_frac,
+                   start_dates  = input_start_dates,
+                   end_dates    = input_end_dates)
+
+## Example using daily:
+### Parameters are updated daily over 5 days
+tw <- time_windows(r0         = input_r0,
+                   dist_param = input_dist_param,
+                   m          = input_m,
+                   imm_frac   = input_imm_frac,
+                   daily      = input_daily)
+
+
+}
+% Add one or more standard keywords, see file 'KEYWORDS' in the
+% R documentation directory.
+%\keyword{  }% use one of  RShowDoc("KEYWORDS")

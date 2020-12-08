@@ -1,0 +1,3 @@
+#!/bin/bash
+clear
+R --vanilla < ../tests/testthat/test-model.R
