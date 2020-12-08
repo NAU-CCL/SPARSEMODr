@@ -12,7 +12,8 @@ Authors@R: c(
      email="toby.hocking@r-project.org",
      role=c("ctb"),
      comment="R package interface"),
-    person("Seth", "Borkovec",,
+    person("Seth", "Borkovec",
+     email="stb224@nau.edu",
      role=c("ctb"),
      comment="package development"))
 Description: Implementation of spatially-explicit, stochastic disease models with customizable time windows that describe how parameter values fluctuate during outbreaks (e.g., in response to public health or conservation interventions).
