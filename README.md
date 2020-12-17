@@ -14,8 +14,8 @@ spatially-explicit models of infectious disease. As we develop the
 package, our goal is to add more model structures and more user-control
 of the model dynamics. Our SPARSEMODr package offers several key features
 that should make it particularly relevant for pedogogical and practical
-use. See [our COVID-19 model vignette](vignettes/covid-19-model.html) for detailed
-walk-throughs of how to run the model, to plot the output, and to
+use. See [our COVID-19 model vignette](https://sparsemod.nau.edu/rpkg/covid19)
+for detailed walk-throughs of how to run the model, to plot the output, and to
 simulate customized time-windows.
 
 -   **Spatially explicit models** that allow user-defined

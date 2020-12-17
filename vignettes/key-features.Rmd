@@ -1,7 +1,7 @@
 ---
 title: "SPARSE-MOD Key Features"
 author: "JR Mihaljevic"
-date: "August 2020"
+date: "December 2020"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{SPARSE-MOD Key Features}

@@ -110,11 +110,12 @@ Universal Model Interface to the SPARSE-MOD Models
 ##########################################
 ## Using supplied example data:
 
+# Read in the example data:
 ex_dir <- system.file(
-  "extdata", "example", package="SPARSEMODr", mustWork=TRUE)
-# Read in the data:
-dat_list <- SPARSEMODr:::read.dat.dir(ex_dir)
+  "extdata", "sparsemodr_example.Rdata", package="SPARSEMODr", mustWork=TRUE)
+load(ex_dir)
 n_pop <- length(dat_list[["pop_N"]])
+
 # Set up realizations:
 realz_seeds <- 1:2
 n_realz <- length(realz_seeds)

@@ -14,8 +14,9 @@
 ##'   future::plan("multiprocess")
 ##' }
 ##' ex_dir <- system.file(
-##'   "extdata", "example", package="SPARSEMODr", mustWork=TRUE)
-##' dat_list <- SPARSEMODr:::read.dat.dir(ex_dir)
+##'   "extdata", "sparsemodr_example.Rdata", package="SPARSEMODr", mustWork=TRUE)
+##' load(ex_dir)
+##' n_pop <- length(dat_list[["pop_N"]])
 ##' model_dt <- with(dat_list, SPARSEMODr::covid19_model_parallel(
 ##'   census_area, E_pops, dist_vec, pop_N))
 

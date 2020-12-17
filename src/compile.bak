@@ -1,5 +1,0 @@
-#!/bin/bash
-rm *.o
-clear
-R -e "Rcpp::compileAttributes('..')"
-R CMD INSTALL ..

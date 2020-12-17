@@ -22,3 +22,4 @@ Imports: Rcpp (>= 1.0.4), future.apply, data.table, future, tidyverse, lubridate
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 LinkingTo: Rcpp
+Depends: R (>= 3.5.0)
