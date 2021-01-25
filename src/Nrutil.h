@@ -8,16 +8,16 @@
 #define FREE_ARG char*
 
 
-int nrerror(char error_text[]);
-float *vector(long nl, long nh);
-int *ivector(long nl, long nh);
-unsigned char *cvector(long nl, long nh);
-unsigned long *lvector(long nl, long nh);
-double *dvector(long nl, long nh);
-float **matrix(long nrl, long nrh, long ncl, long nch);
-double **dmatrix(long nrl, long nrh, long ncl, long nch);
-int **imatrix(long nrl, long nrh, long ncl, long nch);
-float **submatrix(float **a, long oldrl, long oldrh, long oldcl, long oldch,
+int nrutil_nrerror(char error_text[]);
+float *nrutil_vector(long nl, long nh);
+int *nrutil_ivector(long nl, long nh);
+unsigned char *nrutil_cvector(long nl, long nh);
+unsigned long *nrutil_lvector(long nl, long nh);
+double *nrutil_dvector(long nl, long nh);
+float **nrutil_matrix(long nrl, long nrh, long ncl, long nch);
+double **nrutil_dmatrix(long nrl, long nrh, long ncl, long nch);
+int **nrutil_imatrix(long nrl, long nrh, long ncl, long nch);
+float **nrutil_submatrix(float **a, long oldrl, long oldrh, long oldcl, long oldch,
 	long newrl, long newcl);
 float **convert_matrix(float *a, long nrl, long nrh, long ncl, long nch);
 float ***f3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh);

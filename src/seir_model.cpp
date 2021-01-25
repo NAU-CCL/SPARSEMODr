@@ -96,11 +96,11 @@ int seir_model (
     //TODO: replace these matrix/vector allocations from Nrutil.h with
     //pre-allocated pointer arguments, so we don't have to worry about
     //memory management in here.
-    dist_mat = matrix(1, n_pop, 1, n_pop);
-    prob_move = matrix(1, n_pop, 1, n_pop);
-    prob_ColSum = vector(1, n_pop);
-    pop_N = vector(1, n_pop);
-    census_area = vector(1, n_pop);
+    dist_mat = nrutil_matrix(1, n_pop, 1, n_pop);
+    prob_move = nrutil_matrix(1, n_pop, 1, n_pop);
+    prob_ColSum = nrutil_vector(1, n_pop);
+    pop_N = nrutil_vector(1, n_pop);
+    census_area = nrutil_vector(1, n_pop);
 
     // compute prob_ColSum and prob_move based on dist_mat and
     // dist_param_low.
@@ -135,17 +135,17 @@ int seir_model (
     // # ROWS = POPS
     // # Cols = 1: Current, 2: Future
     int **S_pop, **E_pop, **I_pop, **R_pop;
-    S_pop = imatrix(1, n_pop, 1, 2);
-    E_pop = imatrix(1, n_pop, 1, 2);
-    I_pop = imatrix(1, n_pop, 1, 2);
-    R_pop = imatrix(1, n_pop, 1, 2);
+    S_pop = nrutil_imatrix(1, n_pop, 1, 2);
+    E_pop = nrutil_imatrix(1, n_pop, 1, 2);
+    I_pop = nrutil_imatrix(1, n_pop, 1, 2);
+    R_pop = nrutil_imatrix(1, n_pop, 1, 2);
 
     // MIGRANTS (from = cols, to = rows)
 
     int **S_move, **I_move;
 
-    S_move = imatrix(1, n_pop, 1, n_pop);
-    I_move = imatrix(1, n_pop, 1, n_pop);
+    S_move = nrutil_imatrix(1, n_pop, 1, n_pop);
+    I_move = nrutil_imatrix(1, n_pop, 1, n_pop);
 
     for(int i=1;i<=n_pop;i++){
         for(int j=1;j<=2;j++){

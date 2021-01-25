@@ -1,3 +1,8 @@
 2020.12.03
 
 Initial release version 1.0
+
+2021.01.15
+
+Bug fixes:
+- Renamed some functions to avoid compiler errors on particular system builds
