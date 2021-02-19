@@ -1,3 +1,4 @@
+[![Generic badge](https://cranlogs.r-pkg.org/badges/grand-total/SPARSEMODr)](https://cran.r-project.org/web/packages/SPARSEMODr/index.html)
 ``` r
 library(tidyverse)
 library(viridis)
