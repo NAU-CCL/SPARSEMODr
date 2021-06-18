@@ -36,7 +36,7 @@
 %- maybe also 'usage' for other objects documented here.
 \arguments{
     \item{r0}{
-        \emph{required} - A numeric vector of the time-varying R-naught.
+        \emph{required} - A numeric vector of the time-varying R-naught. \strong{New in version 1.1.0}: You can now provide a list of these R-naught vectors--one for each population. The number of populations must be equal to those used in the \code{\link{covid19_control}} or \code{\link{seir_control}}.
     }
     \item{dist_param}{
         \emph{required} - A numeric vector of the \code{dist_param} that is used to calculate the dispersal kernal (see details below).
@@ -75,6 +75,8 @@
 \details{
 
     See \code{\link{Time-varying R0}} for descriptions of parameter \code{r0}, and see \code{\link{Movement}} for descriptions of \code{m} and \code{dist_param}.
+    
+    \strong{New in version 1.1.0}: \code{r0} may now be supplied as a list of R-naught vectors. This is useful when you have different R0 data for each population in the area you are simulating. Rather than assuming that all populations have the same R-naught trajectory, which is the default behavior in versions before 1.1.0, you can provide different R-naught trajectories for each population. Refer to the last example to see how to use this functionality.
 
     Defining time window durations. One of the following options is required to define the duration of each time window: \code{window_length}, or \code{start_dates} AND \code{end_dates}, or \code{daily}.
 
@@ -92,7 +94,9 @@ Seth Borkovec, \email{stb224@nau.edu}; Joseph Mihaljevic, \email{joseph.mihaljev
 }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
-
+\seealso{
+    \code{\link{covid19_control}}, \code{\link{seir_control}}
+}
 \examples{
 
 ## Data set for the examples: (All examples include 5 time windows)
@@ -131,6 +135,21 @@ tw <- time_windows(r0         = input_r0,
                    imm_frac   = input_imm_frac,
                    daily      = input_daily)
 
+## Example with different R0 vectors for different populations:
+### n_pops should be the total number of populations as used in covid19_control or seir_control
+n_pops <- 100
+r0 <- list()
+r0[[1]]      <- c( 2.5, 2.0, 0.8, 0.8, 1.5)
+r0[[2]]      <- c( 2.5, 1.2, 1.1, 0.7, 1.2)
+r0[[3]]      <- c( 2.5, 2.2, 1.8, 1.2, 0.9)
+# Continue up to your number of populations
+r0[[n_pops]] <- c( 2.5, 1.8, 0.9, 1.1, 1.7)
+
+tw <- time_windows(r0            = input_r0,
+                   dist_param    = input_dist_param,
+                   m             = input_m,
+                   imm_frac      = input_imm_frac,
+                   window_length = input_window_length)
 
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

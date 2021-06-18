@@ -1,8 +1,8 @@
 #' Similar to a named list but with custom error checking and data manipulation for the SPARSEMODr model.
 #'
-#' @author Seth Borkovec 2020
+#' @author Seth Borkovec 2020 (revised June 2021)
 #'
-#' @param r0 A numeric vector for R0 values.
+#' @param r0 A numeric vector for R-naught values. Optionally a list of R-naught numeric vectors--one for every population as used in the control.
 #' @param dist_param A numeric vector of distance parameters.
 #' @param m A numeric vector of movement frequencies.
 #' @param imm_frac A numeric vector for immigration fractions.
@@ -19,6 +19,8 @@
 
 
 
+# r0 can now be a list of R0 vectors for each population. The number of populations must be
+# equal to the number of populations used in the covid19_control or seir_control.
 time_windows <- function(r0=NULL,
                          dist_param=NULL,
                          m=NULL,
@@ -41,6 +43,19 @@ time_windows <- function(r0=NULL,
     if (is.null(m)) stop("Parameter m cannot be omitted.")
     if (is.null(imm_frac)) stop("Parameter imm_frac cannot be omitted.")
 
+    # Allows users to provide a single R0 vector
+    if (class(r0) != "list") {
+        temp_r0 <- r0
+        r0 <- list()
+        r0[[1]] <- temp_r0
+    }
+
+    # Number of populations
+    n_pop <- length(r0)
+
+    # Number of entries
+    total_windows <- length(r0[[1]])
+
     # Validate that only one date input option was chosen
     if (is.null(window_length) && is.null(start_dates) && is.null(daily)) stop("You must provide one of the following options: window_length, start_dates with end_dates, or daily.")
     if ((!is.null(window_length) && (!is.null(start_dates) || !is.null(end_dates) || !is.null(daily))) ||
@@ -55,26 +70,32 @@ time_windows <- function(r0=NULL,
     if (is.null(daily) && (!is.null(hosp_rate) || !is.null(recov_hosp) || !is.null(icu_rate) || !is.null(death_rate))) stop("You may only provide hosp_rate, recov_hosp, icu_rate, death_rate when using daily time windows.")
 
     # Validate that the lengths match and contain valid data
-    if (!all(r0 >= 0)) stop("Values of r0 must be greater than or equal to zero.")
     if (!all(dist_param >= 0)) stop("Values of dist_param must be greater than or equal to zero.")
     if (!all(m >= 0)) stop("Values of m must be greater than or equal to zero.")
     if (!all(imm_frac >= 0)) stop("Values of imm_frac must be greater than zero.")
     if (!all(imm_frac <= 1)) stop("Values of imm_frac must be less than or equal to one.")
-    if (length(r0) != length(dist_param)) stop("Length of R0 does not match length of dist_param.")
-    if (length(r0) != length(m)) stop("Length of R0 does not match length of m.")
-    if (length(r0) != length(imm_frac)) stop("Length of R0 does not match length of imm_frac.")
-    if (!is.null(window_length) && (length(r0) != length(window_length))) stop("Length of R0 does not match length of window_length.")
+    if (total_windows != length(dist_param)) stop("Length of R0 does not match length of dist_param.")
+    if (total_windows != length(m)) stop("Length of R0 does not match length of m.")
+    if (total_windows != length(imm_frac)) stop("Length of R0 does not match length of imm_frac.")
+    if (!is.null(window_length) && (total_windows != length(window_length))) stop("Length of R0 does not match length of window_length.")
+
+    # Validate that all of R0 vectors are the same length and have valid data
+    for (this_pop in 1:n_pop) {
+        if (!all(r0[[this_pop]] >= 0)) stop("Values of r0 must be greater than or equal to zero.")
+        if (length(r0[[this_pop]]) != total_windows) {stop("The lengths of R0 in each population must be the same.")}
+    }
+
     if (!is.null(start_dates))
     {
         if (!is.Date(start_dates)) stop("Vector start_dates does not contain valid Dates.")
         if (!is.Date(end_dates)) stop("Vector end_dates does not contain valid Dates.")
         if (length(start_dates) != length(end_dates)) stop("The lengths of start_dates and end_dates do not match.")
-        if (length(r0) != length(start_dates)) stop("Length of R0 does not match the length of start_dates and end_dates.")
+        if (total_windows != length(start_dates)) stop("Length of R0 does not match the length of start_dates and end_dates.")
     }
     if (!is.null(daily))
     {
         if (!is.Date(daily)) stop("Vector daily does not contain valid Dates.")
-        if (length(r0) != length(daily)) stop("Length of R0 does not match length of daily.")
+        if (total_windows != length(daily)) stop("Length of R0 does not match length of daily.")
     }
 
     # Calculate window_lengths if needed
@@ -120,32 +141,31 @@ time_windows <- function(r0=NULL,
 
     # Set hosp_rate, recov_hosp, icu_rate, death_rate if not provided
     if (is.null(hosp_rate)) {
-        hosp_rate <- rep(0.175, length(r0))
+        hosp_rate <- rep(0.175, total_windows)
     } else {
-        if (length(r0) != length(hosp_rate)) stop("Length of R0 does not match length of hosp_rate.")
+        if (total_windows != length(hosp_rate)) stop("Length of R0 does not match length of hosp_rate.")
         checkIfInZeroToOne(hosp_rate, "hosp_rate")
     }
     if (is.null(recov_hosp)) {
-        recov_hosp <- rep(1/7.0, length(r0))
+        recov_hosp <- rep(1/7.0, total_windows)
     } else {
-        if (length(r0) != length(recov_hosp)) stop("Length of R0 does not match length of recov_hosp.")
+        if (total_windows != length(recov_hosp)) stop("Length of R0 does not match length of recov_hosp.")
         checkIfGreaterThanZero(recov_hosp, "recov_hosp")
     }
     if (is.null(icu_rate)) {
-        icu_rate <- rep(0.20, length(r0))
+        icu_rate <- rep(0.20, total_windows)
     } else {
-        if (length(r0) != length(icu_rate)) stop("Length of R0 does not match length of icu_rate.")
+        if (total_windows != length(icu_rate)) stop("Length of R0 does not match length of icu_rate.")
         checkIfInZeroToOne(icu_rate, "icu_rate")
     }
     if (is.null(death_rate)) {
-        death_rate <- rep(0.60, length(r0))
+        death_rate <- rep(0.60, total_windows)
     } else {
-        if (length(r0) != length(death_rate)) stop("Length of R0 does not match length of death_rate.")
+        if (total_windows != length(death_rate)) stop("Length of R0 does not match length of death_rate.")
         checkIfInZeroToOne(death_rate, "death_rate")
     }
 
     # Automatic calculation for total_windows and t_max
-    total_windows <- length(r0)
     t_max <- sum(window_length)
 
     # Assign the values to the class fields

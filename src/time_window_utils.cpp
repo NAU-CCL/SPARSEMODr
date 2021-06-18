@@ -32,16 +32,18 @@ void clearTimeWindows(TimeWindow *node)
     {
         clearTimeWindows(node->next);
     }
+    free(node->r0);
     node->prev = NULL;
-    delete node;
+    free(node);
 }
 
 
 /*
  * Creates the time windows from the imported data.
  */
-TimeWindow *importTimeWindowData(int total,
-                                 double *r0,
+TimeWindow *importTimeWindowData(int n_pop,
+                                 int total,
+                                 double *all_r0,
                                  double *dist_param,
                                  double *m,
                                  double *imm_frac,
@@ -52,7 +54,6 @@ TimeWindow *importTimeWindowData(int total,
                                  int *window_length)
 {
     TimeWindow *head_node = NULL;
-    TimeWindow *temp_node = NULL;
 
     int index = 0;
 
@@ -60,8 +61,14 @@ TimeWindow *importTimeWindowData(int total,
     // for the initial values with length 0 days.
     if (window_length[0] > 1)
     {
-        temp_node = new TimeWindow();
-        temp_node->r0 = r0[0];
+        TimeWindow *temp_node = (TimeWindow *)malloc(sizeof(TimeWindow));
+        temp_node->r0 = (double *)malloc(n_pop * sizeof(double));
+
+        // Populate r0 with this time window's value for each population
+        for (int this_pop = 0; this_pop < n_pop; this_pop++) {
+            temp_node->r0[this_pop] = all_r0[this_pop * total + index];
+        }
+
         temp_node->dist_param = dist_param[0];
         temp_node->m = m[0];
         temp_node->imm_frac = imm_frac[0];
@@ -78,8 +85,14 @@ TimeWindow *importTimeWindowData(int total,
     // Create the linked list of time windows as normal
     while (index < total)
     {
-        temp_node = new TimeWindow();
-        temp_node->r0 = r0[index];
+        TimeWindow *temp_node = (TimeWindow *)malloc(sizeof(TimeWindow));
+        temp_node->r0 = (double *)malloc(n_pop * sizeof(double));
+
+        // Populate r0 with this time window's value for each population
+        for (int this_pop = 0; this_pop < n_pop; this_pop++) {
+            temp_node->r0[this_pop] = all_r0[this_pop * total + index];
+        }
+
         temp_node->dist_param = dist_param[index];
         temp_node->m = m[index];
         temp_node->imm_frac = imm_frac[index];

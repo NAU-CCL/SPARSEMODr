@@ -27,7 +27,7 @@ struct GeneralParamStruct
     int tau;            // remove?
     int n_equations;    // remove?
     int trans_type;
-    double beta;
+    double *beta;
     double m;
     double imm_frac;
     double stoch_sd;

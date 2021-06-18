@@ -2,19 +2,18 @@
 #include <string>
 using namespace std;
 
-
 class TimeWindow
 {
 public:
-    float r0;                   // R0 value at the end of time window
-    float dist_param;           // Movement range
-    float m;                    // Movement frequency
-    double imm_frac;            // Immigration fraction at end of time window
+    double *r0;    // R0 value at the end of time window
+    float dist_param; // Movement range
+    float m;          // Movement frequency
+    double imm_frac;  // Immigration fraction at end of time window
     double hosp_rate;
     double icu_rate;
     double death_rate;
     double recov_hosp;
-    int window_length;          // Number of days in the time window
+    int window_length; // Number of days in the time window
 
     TimeWindow *prev;
     TimeWindow *next;
@@ -22,44 +21,44 @@ public:
     ///// Class functions
 
     // R0 functions
-    float getMinR0()
+    float getMinR0(int index)
     {
         if (prev != NULL)
         {
-            if (prev->r0 < r0)
+            if (prev->r0[index] < r0[index])
             {
-                return prev->r0;
+                return prev->r0[index];
             }
         }
-        return r0;
+        return r0[index];
     }
 
-    float getMaxR0()
+    float getMaxR0(int index)
     {
         if (prev != NULL)
         {
-            if (prev->r0 < r0)
+            if (prev->r0[index] < r0[index])
             {
-                return r0;
+                return r0[index];
             }
         }
-        return prev->r0;
+        return prev->r0[index];
     }
 
-    double getR0Slope()
+    double getR0Slope(int index)
     {
         if ((window_length > 1) && (prev != NULL))
         {
-            return (r0 - prev->r0) / window_length;
+            return (r0[index] - prev->r0[index]) / window_length;
         }
         return 0;
     }
 
-    double getR0Intercept(int t=0)
+    double getR0Intercept(int index, int t=0)
     {
         if (prev != NULL)
         {
-            return prev->r0 - getR0Slope() * t;
+            return prev->r0[index] - getR0Slope(index) * t;
         }
         return 0;
     }
@@ -98,7 +97,7 @@ public:
         return 0;
     }
 
-    double getDistParamIntercept(int t=0)
+    double getDistParamIntercept(int t = 0)
     {
         if (prev != NULL)
         {
@@ -141,7 +140,7 @@ public:
         return 0;
     }
 
-    double getMIntercept(int t=0)
+    double getMIntercept(int t = 0)
     {
         if (prev != NULL)
         {
@@ -184,7 +183,7 @@ public:
         return 0;
     }
 
-    double getImmFracIntercept(int t=0)
+    double getImmFracIntercept(int t = 0)
     {
         if (prev != NULL)
         {
@@ -192,7 +191,7 @@ public:
         }
         return 0;
     }
-    // 
+    //
     // // hosp_rate functions
     // float getMinHospRate()
     // {
@@ -366,15 +365,14 @@ public:
     // }
 };
 
-
-
 ///// Globals
 // NONE
 
 ///// Function Declarations
 TimeWindow *addTimeWindow(TimeWindow *node, TimeWindow *new_node);
 void clearTimeWindows(TimeWindow *node);
-TimeWindow *importTimeWindowData(int total,
+TimeWindow *importTimeWindowData(int n_pop,
+                                 int total,
                                  double *r0,
                                  double *dist_param,
                                  double *m,

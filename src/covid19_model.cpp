@@ -3,6 +3,7 @@
 #include "string.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include <unordered_map>
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -67,9 +68,13 @@ int covid19_model (
     bool dist_param_changed = false;
     bool daily_mode_on = false;
 
+    // Create a map for the beta values to avoid repeated calcuations. <unordered_map> is used because it is faster than the regular map.
+    std::unordered_map<double, double> beta_map;
+
     // Import the time window data into a linked list
     TimeWindow *head_node, *current_node = NULL;
-    head_node = importTimeWindowData(params->total_windows,
+    head_node = importTimeWindowData(params->n_pop,
+                                     params->total_windows,
                                      params->input_r0,
                                      params->input_dist_param,
                                      params->input_m,
@@ -79,7 +84,9 @@ int covid19_model (
                                      params->input_death_rate,
                                      params->input_recov_hosp,
                                      params->input_window_length);
+
     current_node = head_node;
+
     // Set initial parameters for funcs.h
     params->hosp_rate = current_node->hosp_rate;
     params->icu_rate = current_node->icu_rate;
@@ -89,6 +96,8 @@ int covid19_model (
     int n_pop = params->n_pop;
     int n_times;
     n_times = params->t_max / params->tau;  // t_max = 250, tau = 1
+
+    double *beta;
 
     // Events and Updates:
     int n_events = 18; //15 non-migration
@@ -114,6 +123,7 @@ int covid19_model (
     prob_ColSum = nrutil_vector(1, n_pop);
     pop_N = nrutil_vector(1, n_pop);
     census_area = nrutil_vector(1, n_pop);
+    beta = nrutil_dvector(1, n_pop);
 
     // compute prob_ColSum and prob_move based on dist_mat and
     // dist_param_low.
@@ -284,6 +294,7 @@ int covid19_model (
                 {
                     // Get the next time window
                     current_node = current_node->next;
+
                     // Check if running in daily mode or time window mode
                     if (current_node->window_length == 1)
                     {
@@ -303,10 +314,6 @@ int covid19_model (
                     current_node = head_node;
                     current_node->window_length = n_times - t;
                 }
-
-                // Min/max for R0
-                r0_slope = current_node->getR0Slope();
-                r0_intercept = current_node->getR0Intercept(t - 1);
 
                 if (dist_param != current_node->dist_param)
                 {
@@ -338,8 +345,6 @@ int covid19_model (
             {
                 params->m = current_node->m;
                 params->imm_frac = current_node->imm_frac;
-                r0 = current_node->r0;
-                params->beta = calculateBeta(r0, params);
                 dist_param = current_node->dist_param;
                 params->hosp_rate = current_node->hosp_rate;
                 params->icu_rate = current_node->icu_rate;
@@ -350,10 +355,34 @@ int covid19_model (
             {
                 params->m = m_slope * t + m_intercept;
                 params->imm_frac = imm_frac_slope * t + imm_frac_intercept;
-                r0 = r0_slope * t + r0_intercept;
-                params->beta = calculateBeta(r0, params);
                 dist_param = dist_param_slope * t + dist_param_intercept;
             }
+
+            // Calculate beta values for each population
+            for (int this_pop = 1; this_pop <= n_pop; this_pop++) {
+                if (daily_mode_on) {
+                    r0 = current_node->r0[this_pop-1];
+
+                    // Avoid calculateBeta if beta was already calculated for this R0
+                    std::unordered_map<double, double>::const_iterator beta_iter = beta_map.find(r0);
+                    if (beta_iter != beta_map.end()) {
+                        beta[this_pop] = beta_iter->second;
+                    }
+                    else {
+                        beta[this_pop] = calculateBeta(r0, params);
+                        beta_map.insert(std::pair<double, double>(r0, beta[this_pop]));
+                    }
+                }
+                else {
+                    // Min/max for R0
+                    r0_slope = current_node->getR0Slope(this_pop-1);
+                    r0_intercept = current_node->getR0Intercept(this_pop-1, t - 1);
+                    r0 = r0_slope * t + r0_intercept;
+
+                    beta[this_pop] = calculateBeta(r0, params);
+                }
+            }
+            params->beta = beta;
 
             // Only deal with prob_move if dist_param changes
             if (dist_param_changed)
@@ -599,11 +628,14 @@ int covid19_model (
     delete[] update_vec_migrants;
     delete[] update_vec_move;
 
+    gsl_rng_free(rand1);
+
     free_matrix(dist_mat, 1, n_pop, 1, n_pop);
     free_matrix(prob_move, 1, n_pop, 1, n_pop);
     free_vector(prob_ColSum, 1, n_pop);
     free_vector(pop_N, 1, n_pop);
     free_vector(census_area, 1, n_pop);
+    free_dvector(beta, 1, n_pop);
 
     free_imatrix(S_pop, 1, n_pop, 1, 2);
     free_imatrix(E_pop, 1, n_pop, 1, 2);
@@ -642,7 +674,7 @@ void trans_type_beta(double& beta_scaled, int this_pop, double infect_sum,
     case 1:
         // FREQUENCY-DEPENDENT TRANSMISSION
 
-        beta_scaled = fabs(Params->beta / Params->pop_N[this_pop] *
+        beta_scaled = fabs(Params->beta[this_pop] / Params->pop_N[this_pop] *
           (1 + (noise_temp) / pow(infect_sum, 0.5)));
 
         break;
@@ -651,7 +683,7 @@ void trans_type_beta(double& beta_scaled, int this_pop, double infect_sum,
         // DENSITY-DEPENDENT TRANSMISSION
         //// MONOD EQUATION (to determine rel'n btw beta and raw pop_dens)
         pop_dens = (Params->pop_N[this_pop] / Params->census_area[this_pop]);
-        beta_dens = Params->beta * pop_dens / (Params->dd_trans_monod_k + pop_dens);
+        beta_dens = Params->beta[this_pop] * pop_dens / (Params->dd_trans_monod_k + pop_dens);
 
         beta_scaled = fabs(beta_dens / Params->pop_N[this_pop] *
           (1 + (noise_temp) /  pow(infect_sum, 0.5)));
@@ -1123,10 +1155,10 @@ double covid19_beta_calc (double beta, void *params)
     temp = (beta / p->Params->recov_p);
     temp += (beta / p->Params->recov_s);
     temp += (p->Params->sym_to_icu_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu1));
-    temp += ((1 - p->Params->hosp_rate) * (beta / p->Params->recov_home));
+    temp += ((1 - p->Params->hosp_rate - p->Params->sym_to_icu_rate) * (beta / p->Params->recov_home));
     temp += p->Params->hosp_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_hosp);
     temp += p->Params->hosp_rate * (p->Params->icu_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu1));
-    temp += p->Params->hosp_rate * (p->Params->icu_rate * ((1 - p->Params->death_rate) * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu2)));
+    temp += (p->Params->hosp_rate * p->Params->icu_rate + p->Params->sym_to_icu_rate) * ((1 - p->Params->death_rate) * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu2));
 
     result += (1 - p->Params->asym_rate) * temp;
     result -= p->r0;
@@ -1206,6 +1238,8 @@ double calculateBeta(float r0, COVID19ParamStruct *Params)
     {
         printf("\tDEBUG: beta = %.4f for R0 = %.1f\n\n", root, r0);
     }
+
+    gsl_root_fsolver_free(s);
 
     return root;
 }
