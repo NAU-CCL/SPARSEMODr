@@ -1,12 +1,12 @@
 model_interface <- function(control, arg.list)
 {
-    # Replicate r0 vectors for all populations if only one provided
+    # Replicate beta vectors for all populations if only one provided
     tw <- arg.list[["input_tw"]]
-    if (length(tw$r0) == 1) {
-        r0_list <- tw$r0[[1]]
+    if (length(tw$beta) == 1) {
+        beta_list <- tw$beta[[1]]
         n_pop <- length(control[["input_N_pops"]])
         for (this_pop in 2:n_pop) {
-            tw$r0[[this_pop]] <- r0_list
+            tw$beta[[this_pop]] <- beta_list
         }
         arg.list[["input_tw"]] <- tw
     }
