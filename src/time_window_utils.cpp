@@ -32,7 +32,7 @@ void clearTimeWindows(TimeWindow *node)
     {
         clearTimeWindows(node->next);
     }
-    free(node->r0);
+    free(node->beta);
     node->prev = NULL;
     free(node);
 }
@@ -43,7 +43,7 @@ void clearTimeWindows(TimeWindow *node)
  */
 TimeWindow *importTimeWindowData(int n_pop,
                                  int total,
-                                 double *all_r0,
+                                 double *all_beta,
                                  double *dist_param,
                                  double *m,
                                  double *imm_frac,
@@ -62,11 +62,11 @@ TimeWindow *importTimeWindowData(int n_pop,
     if (window_length[0] > 1)
     {
         TimeWindow *temp_node = (TimeWindow *)malloc(sizeof(TimeWindow));
-        temp_node->r0 = (double *)malloc(n_pop * sizeof(double));
+        temp_node->beta = (double *)malloc(n_pop * sizeof(double));
 
-        // Populate r0 with this time window's value for each population
+        // Populate beta with this time window's value for each population
         for (int this_pop = 0; this_pop < n_pop; this_pop++) {
-            temp_node->r0[this_pop] = all_r0[this_pop * total + index];
+            temp_node->beta[this_pop] = all_beta[this_pop * total + index];
         }
 
         temp_node->dist_param = dist_param[0];
@@ -86,11 +86,11 @@ TimeWindow *importTimeWindowData(int n_pop,
     while (index < total)
     {
         TimeWindow *temp_node = (TimeWindow *)malloc(sizeof(TimeWindow));
-        temp_node->r0 = (double *)malloc(n_pop * sizeof(double));
+        temp_node->beta = (double *)malloc(n_pop * sizeof(double));
 
-        // Populate r0 with this time window's value for each population
+        // Populate beta with this time window's value for each population
         for (int this_pop = 0; this_pop < n_pop; this_pop++) {
-            temp_node->r0[this_pop] = all_r0[this_pop * total + index];
+            temp_node->beta[this_pop] = all_beta[this_pop * total + index];
         }
 
         temp_node->dist_param = dist_param[index];

@@ -14,7 +14,7 @@ struct GeneralParamStruct
     double *input_census_area;
     double *input_dist_vec;
 
-    double *input_r0;           // vector from time windows
+    double *input_beta;           // vector from time windows
     double *input_dist_param;   // vector from time windows
     double *input_m;            // vector from time windows
     double *input_imm_frac;     // vector from time windows

@@ -47,11 +47,11 @@ typedef struct
 } MoveMatStruct;
 
 
-struct beta_calc_struct
-{
-    float r0;
-    SEIRParamStruct *Params;
-};
+// struct beta_calc_struct
+// {
+//     float r0;
+//     SEIRParamStruct *Params;
+// };
 
 
 int seir_model(
@@ -96,5 +96,5 @@ void update_pop_migrants(
     SEIRParamStruct *Params, PopStruct AllPops,
     MoveMatStruct MovePops, gsl_rng *rand1
 );
-double beta_calc (double beta, void *params);
-double calculateBeta(float r0, SEIRParamStruct *Params);
+// double beta_calc (double beta, void *params);
+// double calculateBeta(float r0, SEIRParamStruct *Params);

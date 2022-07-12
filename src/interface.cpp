@@ -77,7 +77,7 @@ covid19_model_interface(
     Rcpp::IntegerVector out_events_total_hosp(nrow);
     Rcpp::IntegerVector out_events_total_icu(nrow);
     Rcpp::IntegerVector out_events_n_death(nrow);
-    Rcpp::List input_r0 = input_tw["r0"];
+    Rcpp::List input_beta = input_tw["beta"];
     Rcpp::NumericVector input_dist_param = input_tw["dist_param"];
     Rcpp::NumericVector input_m = input_tw["m"];
     Rcpp::NumericVector input_imm_frac = input_tw["imm_frac"];
@@ -88,11 +88,11 @@ covid19_model_interface(
     Rcpp::IntegerVector input_window_length = input_tw["window_length"];
 
     int total_windows = input_tw["total_windows"];
-    double *r0 = (double *)malloc(n_pop * total_windows * sizeof(double));
+    double *beta = (double *)malloc(n_pop * total_windows * sizeof(double));
     for (int outerIndex = 0; outerIndex < n_pop; outerIndex++) {
-        Rcpp::NumericVector inner_r0 = input_r0[outerIndex];
+        Rcpp::NumericVector inner_beta = input_beta[outerIndex];
         for (int innerIndex = 0; innerIndex < total_windows; innerIndex++) {
-            r0[innerIndex + (outerIndex * total_windows)] = inner_r0[innerIndex];
+            beta[innerIndex + (outerIndex * total_windows)] = inner_beta[innerIndex];
         }
     }
 
@@ -101,7 +101,7 @@ covid19_model_interface(
     params.input_realz_seeds = &input_realz_seeds[0];
     params.input_census_area = &input_census_area[0];
     params.input_dist_vec = &input_dist_mat[0];
-    params.input_r0 = r0;
+    params.input_beta = beta;
     params.input_dist_param = &input_dist_param[0];
     params.input_m = &input_m[0];
     params.input_imm_frac = &input_imm_frac[0];
@@ -165,7 +165,7 @@ covid19_model_interface(
                                 &out_events_total_icu[0],
                                 &out_events_n_death[0]);
 
-    free(r0);
+    free(beta);
 
     if(status == ERROR_POP_FILE_NOT_FOUND)
     {
@@ -254,18 +254,18 @@ seir_model_interface(
     Rcpp::IntegerVector out_events_infectious(nrow);
     Rcpp::IntegerVector out_events_recov(nrow);
     Rcpp::IntegerVector out_events_death(nrow);
-    Rcpp::List input_r0 = input_tw["r0"];
+    Rcpp::List input_beta = input_tw["beta"];
     Rcpp::NumericVector input_dist_param = input_tw["dist_param"];
     Rcpp::NumericVector input_m = input_tw["m"];
     Rcpp::NumericVector input_imm_frac = input_tw["imm_frac"];
     Rcpp::IntegerVector input_window_length = input_tw["window_length"];
 
     int total_windows = input_tw["total_windows"];
-    double *r0 = (double *)malloc(n_pop * total_windows * sizeof(double));
+    double *beta = (double *)malloc(n_pop * total_windows * sizeof(double));
     for (int outerIndex = 0; outerIndex < n_pop; outerIndex++) {
-        Rcpp::NumericVector inner_r0 = input_r0[outerIndex];
+        Rcpp::NumericVector inner_beta = input_beta[outerIndex];
         for (int innerIndex = 0; innerIndex < total_windows; innerIndex++) {
-            r0[innerIndex + (outerIndex * total_windows)] = inner_r0[innerIndex];
+            beta[innerIndex + (outerIndex * total_windows)] = inner_beta[innerIndex];
         }
     }
 
@@ -274,7 +274,7 @@ seir_model_interface(
     params.input_realz_seeds = &input_realz_seeds[0];
     params.input_census_area = &input_census_area[0];
     params.input_dist_vec = &input_dist_mat[0];
-    params.input_r0 = r0;
+    params.input_beta = beta;
     params.input_dist_param = &input_dist_param[0];
     params.input_m = &input_m[0];
     params.input_imm_frac = &input_imm_frac[0];

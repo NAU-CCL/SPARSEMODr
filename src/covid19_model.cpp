@@ -60,7 +60,8 @@ int covid19_model (
     gsl_rng *rand1 = gsl_rng_alloc(T1);
     //*****************************************
 
-    double r0 = 0, r0_slope = 0, r0_intercept = 0;
+    // double r0 = 0, r0_slope = 0, r0_intercept = 0, r0_temp = 0;
+    double beta_temp = 0, beta_slope = 0, beta_intercept = 0;
     double m_slope = 0, m_intercept = 0;
     double dist_param = 0, dist_param_low = 0, dist_param_slope = 0;
     double dist_param_intercept = 0;
@@ -69,13 +70,13 @@ int covid19_model (
     bool daily_mode_on = false;
 
     // Create a map for the beta values to avoid repeated calcuations. <unordered_map> is used because it is faster than the regular map.
-    std::unordered_map<double, double> beta_map;
+    // std::unordered_map<double, double> beta_map;
 
     // Import the time window data into a linked list
     TimeWindow *head_node, *current_node = NULL;
     head_node = importTimeWindowData(params->n_pop,
                                      params->total_windows,
-                                     params->input_r0,
+                                     params->input_beta,
                                      params->input_dist_param,
                                      params->input_m,
                                      params->input_imm_frac,
@@ -361,25 +362,25 @@ int covid19_model (
             // Calculate beta values for each population
             for (int this_pop = 1; this_pop <= n_pop; this_pop++) {
                 if (daily_mode_on) {
-                    r0 = current_node->r0[this_pop-1];
+                    beta_temp = current_node->beta[this_pop-1];
 
                     // Avoid calculateBeta if beta was already calculated for this R0
-                    std::unordered_map<double, double>::const_iterator beta_iter = beta_map.find(r0);
-                    if (beta_iter != beta_map.end()) {
-                        beta[this_pop] = beta_iter->second;
-                    }
-                    else {
-                        beta[this_pop] = calculateBeta(r0, params);
-                        beta_map.insert(std::pair<double, double>(r0, beta[this_pop]));
-                    }
+                    // std::unordered_map<double, double>::const_iterator beta_iter = beta_map.find(r0_temp);
+                    // if (beta_iter != beta_map.end()) {
+                    //     beta[this_pop] = beta_iter->second;
+                    // }
+                    // else {
+                        beta[this_pop] = beta_temp; //calculateBeta(r0_temp, params);
+                        // beta_map.insert(std::pair<double, double>(r0_temp, beta[this_pop]));
+                    // }
                 }
                 else {
                     // Min/max for R0
-                    r0_slope = current_node->getR0Slope(this_pop-1);
-                    r0_intercept = current_node->getR0Intercept(this_pop-1, t - 1);
-                    r0 = r0_slope * t + r0_intercept;
+                    beta_slope = current_node->getbetaSlope(this_pop-1);
+                    beta_intercept = current_node->getbetaIntercept(this_pop-1, t - 1);
+                    beta_temp = beta_slope * t + beta_intercept;
 
-                    beta[this_pop] = calculateBeta(r0, params);
+                    beta[this_pop] = beta_temp; //calculateBeta(r0_temp, params);
                 }
             }
             params->beta = beta;
@@ -1145,26 +1146,26 @@ void update_pop_migrants(int *update_vec_migrants, int this_pop,
  *
  * Used by GSL root solver in calculateBeta.
  */
-double covid19_beta_calc (double beta, void *params)
-{
-    double result, temp;
-    struct covid_beta_calc_struct *p = (struct covid_beta_calc_struct *)params;
-
-    result = (beta * p->Params->frac_beta_asym * p->Params->asym_rate / p->Params->recov_a);
-
-    temp = (beta / p->Params->recov_p);
-    temp += (beta / p->Params->recov_s);
-    temp += (p->Params->sym_to_icu_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu1));
-    temp += ((1 - p->Params->hosp_rate - p->Params->sym_to_icu_rate) * (beta / p->Params->recov_home));
-    temp += p->Params->hosp_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_hosp);
-    temp += p->Params->hosp_rate * (p->Params->icu_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu1));
-    temp += (p->Params->hosp_rate * p->Params->icu_rate + p->Params->sym_to_icu_rate) * ((1 - p->Params->death_rate) * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu2));
-
-    result += (1 - p->Params->asym_rate) * temp;
-    result -= p->r0;
-
-    return result;
-}
+// double covid19_beta_calc (double beta, void *params)
+// {
+//     double result, temp;
+//     struct covid_beta_calc_struct *p = (struct covid_beta_calc_struct *)params;
+// 
+//     result = (beta * p->Params->frac_beta_asym * p->Params->asym_rate / p->Params->recov_a);
+// 
+//     temp = (beta / p->Params->recov_p);
+//     temp += (beta / p->Params->recov_s);
+//     temp += (p->Params->sym_to_icu_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu1));
+//     temp += ((1 - p->Params->hosp_rate - p->Params->sym_to_icu_rate) * (beta / p->Params->recov_home));
+//     temp += p->Params->hosp_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_hosp);
+//     temp += p->Params->hosp_rate * (p->Params->icu_rate * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu1));
+//     temp += (p->Params->hosp_rate * p->Params->icu_rate + p->Params->sym_to_icu_rate) * ((1 - p->Params->death_rate) * (beta * p->Params->frac_beta_hosp / p->Params->recov_icu2));
+// 
+//     result += (1 - p->Params->asym_rate) * temp;
+//     result -= p->r0;
+// 
+//     return result;
+// }
 
 
 /*
@@ -1172,74 +1173,74 @@ double covid19_beta_calc (double beta, void *params)
  *
  * Calculates beta based on R0 value.
  */
-double calculateBeta(float r0, COVID19ParamStruct *Params)
-{
-    int status;
-    int iteration = 0;
-    int max_iter = MAX_BRENT_ITERATIONS;
-
-    double root = 0;
-    double root_low = BETA_LOWER_LIMIT;
-    double root_high = BETA_UPPER_LIMIT;
-
-    const gsl_root_fsolver_type *root_fsolver_type;
-    root_fsolver_type = gsl_root_fsolver_brent;
-
-    gsl_root_fsolver *s;
-    s = gsl_root_fsolver_alloc(root_fsolver_type);
-
-    struct covid_beta_calc_struct params = {r0, Params};
-
-    gsl_function F;
-    F.function = &covid19_beta_calc;
-    F.params = &params;
-
-    gsl_root_fsolver_set (s, &F, root_low, root_high);
-
-    // For debugging output in console, set the constant to 1 at the top of this file.
-    if (OUTPUT_DEBUG_ON == 1)
-    {
-        printf ("using %s method\n", gsl_root_fsolver_name (s));
-
-        printf ("%5s [%9s, %9s] %9s %9s\n",
-                "iter", "lower", "upper", "root",
-                "err(est)");
-    }
-
-    /*
-     * Use GSL root solver to find the root. Number of iterations to try and
-     * the upper and lower bounds for beta are set as constants at the top
-     * of this file.
-     */
-    do
-    {
-        iteration++;
-        status = gsl_root_fsolver_iterate (s);
-        root = gsl_root_fsolver_root(s);
-        root_low = gsl_root_fsolver_x_lower(s);
-        root_high = gsl_root_fsolver_x_upper(s);
-        status = gsl_root_test_interval(root_low, root_high, 0, 0.001);
-
-        // For debugging output in console, set the constant to 1 at the top of this file.
-        if (OUTPUT_DEBUG_ON == 1)
-        {
-            if (status == GSL_SUCCESS) printf ("Converged:\n");
-
-            printf ("%5d [%.7f, %.7f] %.7f %.7f\n",
-                    iteration, root_low, root_high,
-                    root ,
-                    root_high - root_low);
-        }
-    }
-    while (status == GSL_CONTINUE && iteration < max_iter);
-
-    // For debugging output in console, set the constant to 1 at the top of this file.
-    if (OUTPUT_DEBUG_ON == 1)
-    {
-        printf("\tDEBUG: beta = %.4f for R0 = %.1f\n\n", root, r0);
-    }
-
-    gsl_root_fsolver_free(s);
-
-    return root;
-}
+// double calculateBeta(float r0, COVID19ParamStruct *Params)
+// {
+//     int status;
+//     int iteration = 0;
+//     int max_iter = MAX_BRENT_ITERATIONS;
+// 
+//     double root = 0;
+//     double root_low = BETA_LOWER_LIMIT;
+//     double root_high = BETA_UPPER_LIMIT;
+// 
+//     const gsl_root_fsolver_type *root_fsolver_type;
+//     root_fsolver_type = gsl_root_fsolver_brent;
+// 
+//     gsl_root_fsolver *s;
+//     s = gsl_root_fsolver_alloc(root_fsolver_type);
+// 
+//     struct covid_beta_calc_struct params = {r0, Params};
+// 
+//     gsl_function F;
+//     F.function = &covid19_beta_calc;
+//     F.params = &params;
+// 
+//     gsl_root_fsolver_set (s, &F, root_low, root_high);
+// 
+//     // For debugging output in console, set the constant to 1 at the top of this file.
+//     if (OUTPUT_DEBUG_ON == 1)
+//     {
+//         printf ("using %s method\n", gsl_root_fsolver_name (s));
+// 
+//         printf ("%5s [%9s, %9s] %9s %9s\n",
+//                 "iter", "lower", "upper", "root",
+//                 "err(est)");
+//     }
+// 
+//     /*
+//      * Use GSL root solver to find the root. Number of iterations to try and
+//      * the upper and lower bounds for beta are set as constants at the top
+//      * of this file.
+//      */
+//     do
+//     {
+//         iteration++;
+//         status = gsl_root_fsolver_iterate (s);
+//         root = gsl_root_fsolver_root(s);
+//         root_low = gsl_root_fsolver_x_lower(s);
+//         root_high = gsl_root_fsolver_x_upper(s);
+//         status = gsl_root_test_interval(root_low, root_high, 0, 0.001);
+// 
+//         // For debugging output in console, set the constant to 1 at the top of this file.
+//         if (OUTPUT_DEBUG_ON == 1)
+//         {
+//             if (status == GSL_SUCCESS) printf ("Converged:\n");
+// 
+//             printf ("%5d [%.7f, %.7f] %.7f %.7f\n",
+//                     iteration, root_low, root_high,
+//                     root ,
+//                     root_high - root_low);
+//         }
+//     }
+//     while (status == GSL_CONTINUE && iteration < max_iter);
+// 
+//     // For debugging output in console, set the constant to 1 at the top of this file.
+//     if (OUTPUT_DEBUG_ON == 1)
+//     {
+//         printf("\tDEBUG: beta = %.4f for R0 = %.1f\n\n", root, r0);
+//     }
+// 
+//     gsl_root_fsolver_free(s);
+// 
+//     return root;
+// }
