@@ -259,7 +259,7 @@ n_days = length(beta_seq)
 # Migration rate
 changing_m = rep(1/10.0, times = n_days)
 # Migration range
-changing_dist_param = rep(150, times = n_days)
+changing_dist_phi = rep(150, times = n_days)
 # Immigration (none)
 changing_imm_frac = rep(0, times = n_days)
 
@@ -270,7 +270,7 @@ date_seq = seq.Date(start_dates[1], end_dates[n_windows], by = "1 day")
 tw = time_windows(
   beta = beta_seq,
   m = changing_m,
-  dist_param = changing_dist_param,
+  dist_phi = changing_dist_phi,
   imm_frac = changing_imm_frac,
   hosp_rate = hr_seq,
 

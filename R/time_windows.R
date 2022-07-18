@@ -3,7 +3,7 @@
 #' @author Seth Borkovec 2020 (revised June 2021)
 #'
 #' @param beta A numeric vector of beta values. Optionally a list of beta numeric vectors--one for every population as used in the control.
-#' @param dist_param A numeric vector of distance parameters.
+#' @param dist_phi A numeric vector of distance parameters.
 #' @param m A numeric vector of movement frequencies.
 #' @param imm_frac A numeric vector for immigration fractions.
 #' @param window_length An integer vector of the number of days in the time window period.
@@ -12,17 +12,17 @@
 #' @param daily A vector of Date objects for daily input data instead of time windows.
 #' @return A time_windows object. Data can be extracted from the object as a named list of vectors.
 #' @examples
-#' tw <- time_windows(r0=input_r0, dist_param=input_dist_param, m=input_m, imm_frac=input_imm_frac, window_length=input_window_length)
-#' tw <- time_windows(input_r0, input_dist_param, input_m, input_imm_frac, input_window_length)
-#' tw <- time_windows(r0=input_r0, dist_param=input_dist_param, m=input_m, imm_frac=input_imm_frac, start_dates=input_start_dates, end_dates=input_end_dates)
-#' tw <- time_windows(r0=input_r0, dist_param=input_dist_param, m=input_m, imm_frac=input_imm_frac, daily=input_daily)
+#' tw <- time_windows(r0=input_r0, dist_phi=input_dist_phi, m=input_m, imm_frac=input_imm_frac, window_length=input_window_length)
+#' tw <- time_windows(input_r0, input_dist_phi, input_m, input_imm_frac, input_window_length)
+#' tw <- time_windows(r0=input_r0, dist_phi=input_dist_phi, m=input_m, imm_frac=input_imm_frac, start_dates=input_start_dates, end_dates=input_end_dates)
+#' tw <- time_windows(r0=input_r0, dist_phi=input_dist_phi, m=input_m, imm_frac=input_imm_frac, daily=input_daily)
 
 
 
 # he number of populations must be
 # equal to the number of populations used in the covid19_control or seir_control.
 time_windows <- function(beta=NULL,
-                         dist_param=NULL,
+                         dist_phi=NULL,
                          m=NULL,
                          imm_frac=NULL,
                          hosp_rate=NULL,
@@ -41,7 +41,7 @@ time_windows <- function(beta=NULL,
     if (!is.null(r0)) stop("Parameter r0 is not supported in this version. You should use beta. See manual.")
     # Validate required arguments are not NULL
     if (is.null(beta)) stop("Parameter beta cannot be omitted.")
-    if (is.null(dist_param)) stop("Parameter dist_param cannot be omitted.")
+    if (is.null(dist_phi)) stop("Parameter dist_phi cannot be omitted.")
     if (is.null(m)) stop("Parameter m cannot be omitted.")
     if (is.null(imm_frac)) stop("Parameter imm_frac cannot be omitted.")
 
@@ -72,11 +72,11 @@ time_windows <- function(beta=NULL,
     if (is.null(daily) && (!is.null(hosp_rate) || !is.null(recov_hosp) || !is.null(icu_rate) || !is.null(death_rate))) stop("You may only provide hosp_rate, recov_hosp, icu_rate, death_rate when using daily time windows.")
 
     # Validate that the lengths match and contain valid data
-    if (!all(dist_param >= 0)) stop("Values of dist_param must be greater than or equal to zero.")
+    if (!all(dist_phi >= 0)) stop("Values of dist_phi must be greater than or equal to zero.")
     if (!all(m >= 0)) stop("Values of m must be greater than or equal to zero.")
     if (!all(imm_frac >= 0)) stop("Values of imm_frac must be greater than zero.")
     if (!all(imm_frac <= 1)) stop("Values of imm_frac must be less than or equal to one.")
-    if (total_windows != length(dist_param)) stop("Length of beta does not match length of dist_param.")
+    if (total_windows != length(dist_phi)) stop("Length of beta does not match length of dist_phi.")
     if (total_windows != length(m)) stop("Length of beta does not match length of m.")
     if (total_windows != length(imm_frac)) stop("Length of beta does not match length of imm_frac.")
     if (!is.null(window_length) && (total_windows != length(window_length))) stop("Length of beta does not match length of window_length.")
@@ -172,7 +172,7 @@ time_windows <- function(beta=NULL,
 
     # Assign the values to the class fields
     value <- list(beta = beta,
-                  dist_param = dist_param,
+                  dist_phi = dist_phi,
                   m = m,
                   imm_frac = imm_frac,
                   hosp_rate = hosp_rate,

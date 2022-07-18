@@ -54,10 +54,10 @@ int seir_model (
 
     double beta_temp = 0, beta_slope = 0, beta_intercept = 0;
     double m_slope = 0, m_intercept = 0;
-    double dist_param = 0, dist_param_low = 0, dist_param_slope = 0;
-    double dist_param_intercept = 0;
+    double dist_phi = 0, dist_phi_low = 0, dist_phi_slope = 0;
+    double dist_phi_intercept = 0;
     double imm_frac_slope = 0, imm_frac_intercept = 0;
-    bool dist_param_changed = false;
+    bool dist_phi_changed = false;
     bool daily_mode_on = false;
 
     // Create a map for the beta values to avoid repeated calcuations. <unordered_map> is used because it is faster than the regular map.
@@ -68,7 +68,7 @@ int seir_model (
     head_node = importTimeWindowData(params->n_pop,
                                      params->total_windows,
                                      params->input_beta,
-                                     params->input_dist_param,
+                                     params->input_dist_phi,
                                      params->input_m,
                                      params->input_imm_frac,
                                      NULL,  // input_hosp_rate
@@ -112,7 +112,7 @@ int seir_model (
     beta = nrutil_dvector(1, n_pop);
 
     // compute prob_ColSum and prob_move based on dist_mat and
-    // dist_param_low.
+    // dist_phi_low.
     for(int i = 1; i <= n_pop; i++){
         pop_N[i] = params->input_N_pops[i-1];//TODO remove pop_N/census_area, just use input_*
         census_area[i] = params->input_census_area[i-1];
@@ -123,7 +123,7 @@ int seir_model (
             prob_move[i][j] = 0;
 
             if(i != j){
-                prob_move[i][j] = 1 / exp(dist_mat[i][j] / dist_param_low);
+                prob_move[i][j] = 1 / exp(dist_mat[i][j] / dist_phi_low);
             }
 
             prob_ColSum[j] = prob_ColSum[j] + prob_move[i][j];
@@ -263,18 +263,18 @@ int seir_model (
                     current_node->window_length = n_times - t;
                 }
 
-                if (dist_param != current_node->dist_param)
+                if (dist_phi != current_node->dist_phi)
                 {
-                    dist_param_changed = true;
+                    dist_phi_changed = true;
 
-                    // dist_param
-                    dist_param_low = current_node->getMinDistParam();
-                    dist_param_slope = current_node->getDistParamSlope();
-                    dist_param_intercept = current_node->getDistParamIntercept(t - 1);
+                    // dist_phi
+                    dist_phi_low = current_node->getMinDistParam();
+                    dist_phi_slope = current_node->getDistParamSlope();
+                    dist_phi_intercept = current_node->getDistParamIntercept(t - 1);
                 }
                 else
                 {
-                    dist_param_changed = false;
+                    dist_phi_changed = false;
                 }
 
                 // m
@@ -293,13 +293,13 @@ int seir_model (
             {
                 params->m = current_node->m;
                 params->imm_frac = current_node->imm_frac;
-                dist_param = current_node->dist_param;
+                dist_phi = current_node->dist_phi;
             }
             else
             {
                 params->m = m_slope * t + m_intercept;
                 params->imm_frac = imm_frac_slope * t + imm_frac_intercept;
-                dist_param = dist_param_slope * t + dist_param_intercept;
+                dist_phi = dist_phi_slope * t + dist_phi_intercept;
             }
 
             // Calculate beta values for each population
@@ -328,8 +328,8 @@ int seir_model (
             }
             params->beta = beta;
 
-            // Only deal with prob_move if dist_param changes
-            if (dist_param_changed)
+            // Only deal with prob_move if dist_phi changes
+            if (dist_phi_changed)
             {
                 for(int k = 1; k <= n_pop; k++){
                     // prob_ColSum[k] = 0.0;
@@ -338,7 +338,7 @@ int seir_model (
                         prob_move[k][j] = 0.0;
 
                         if(k != j){
-                            prob_move[k][j] = 1 / exp(dist_mat[k][j] / dist_param);
+                            prob_move[k][j] = 1 / exp(dist_mat[k][j] / dist_phi);
                         }
                         // prob_ColSum[j] = prob_ColSum[j] + prob_move[k][j];
                     }

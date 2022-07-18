@@ -44,7 +44,7 @@ void clearTimeWindows(TimeWindow *node)
 TimeWindow *importTimeWindowData(int n_pop,
                                  int total,
                                  double *all_beta,
-                                 double *dist_param,
+                                 double *dist_phi,
                                  double *m,
                                  double *imm_frac,
                                  double *hosp_rate,
@@ -69,7 +69,7 @@ TimeWindow *importTimeWindowData(int n_pop,
             temp_node->beta[this_pop] = all_beta[this_pop * total + index];
         }
 
-        temp_node->dist_param = dist_param[0];
+        temp_node->dist_phi = dist_phi[0];
         temp_node->m = m[0];
         temp_node->imm_frac = imm_frac[0];
         if (hosp_rate != NULL) temp_node->hosp_rate = hosp_rate[0];
@@ -93,7 +93,7 @@ TimeWindow *importTimeWindowData(int n_pop,
             temp_node->beta[this_pop] = all_beta[this_pop * total + index];
         }
 
-        temp_node->dist_param = dist_param[index];
+        temp_node->dist_phi = dist_phi[index];
         temp_node->m = m[index];
         temp_node->imm_frac = imm_frac[index];
         if (hosp_rate != NULL) temp_node->hosp_rate = hosp_rate[index];

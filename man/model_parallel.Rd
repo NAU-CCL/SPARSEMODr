@@ -71,7 +71,7 @@ future::plan("multisession")
 
 # Set up time windows (see time_windows for other ways to do this)
 input_beta <-           c(   0.3,   0.3,  0.08,  0.08,  0.15)
-input_dist_param <-     c(   200,   200,    20,   150,   150)
+input_dist_phi <-     c(   200,   200,    20,   150,   150)
 input_m <-              c( 0.002, 0.002, 0.002,  0.02,  0.02)
 input_imm_frac <-       c(   0.0,   0.0,   0.0,  0.02,  0.02)
 # Window intervals
@@ -81,7 +81,7 @@ end_dates =   c(mdy("1-31-20"), mdy("2-15-20"), mdy("3-10-20"), mdy("3-21-20"), 
 
 # User creates the time_windows object here
 tw <- time_windows(beta = input_beta,
-                   dist_param = input_dist_param,
+                   dist_phi = input_dist_phi,
                    m = input_m,
                    imm_frac = input_imm_frac,
                    start_dates = start_dates,

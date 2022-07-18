@@ -111,23 +111,23 @@ ggplot(beta_seq_df) +
 
 ### Dispersal kernel
 
-As we discuss in the documentation (see $\texttt{?SPARSEMODr::Movement}$), we allow migration between populations in the meta-population to affect local and regional transmission dynamics. For now, migration is determined by a simple dispersal kernel, although we are working on adding more customizable gravity kernels. The user can control the shape of this kernel with the $\texttt{dist_param}$ option, as follows:
-$$ p_{i,j} = \frac{1}{\text{exp}(d_{i,j} / \text{dist_param})}, $$
+As we discuss in the documentation (see $\texttt{?SPARSEMODr::Movement}$), we allow migration between populations in the meta-population to affect local and regional transmission dynamics. For now, migration is determined by a simple dispersal kernel, although we are working on adding more customizable gravity kernels. The user can control the shape of this kernel with the $\texttt{dist_phi}$ option, as follows:
+$$ p_{i,j} = \frac{1}{\text{exp}(d_{i,j} / \phi)}, $$
 where $p_{i,j}$ is the probability of moving from population $j$ to population $i$ and $d_{i,j}$ is the euclidean distance between the two populations.
 
-We can see how the $\texttt{dist_param}$ controls the probability below. In general, larger values of $\texttt{dist_param}$ make it more likely for hosts to travel farther distances.
+We can see how $\phi$ (i.e., $\texttt{dist_phi}$ in the model input) controls the probability below. In general, larger values of $\texttt{dist_phi}$ make it more likely for hosts to travel farther distances.
 
 ```{r, fig.width=5, echo=FALSE}
 
 # Distance between populations:
 dist_temp = seq(0, 300, length.out = 200)
-dist_param = c(50, 100, 200)
+dist_phi = c(50, 100, 200)
 
-p_move_func = function(dist_param, distance){
-  1 / (exp( distance / dist_param ))
+p_move_func = function(dist_phi, distance){
+  1 / (exp( distance / dist_phi ))
 }
 
-p_move_mat = sapply(dist_param,
+p_move_mat = sapply(dist_phi,
                     p_move_func, distance = dist_temp)
 p_move_df =
   data.frame(dist_ij = dist_temp, p_move_mat) %>%
@@ -143,7 +143,7 @@ ggplot(p_move_df) +
                 color = dp_val, group = dp_val)) +
   labs(x = "Distance between pops (km)",
        y = "Probability of migration") +
-  scale_color_viridis_d(name = "dist_param",
+  scale_color_viridis_d(name = expression(phi),
                         breaks = c("50", "100", "200"),
                         direction = -1) +
   theme_classic() +

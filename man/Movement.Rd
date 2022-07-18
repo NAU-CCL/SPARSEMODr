@@ -21,8 +21,8 @@
     Movement frequency is controlled by parameter \code{m} in the model, and this rate can be updated daily to simulate changes in movement patterns over time (see \code{\link{time_windows}}). In the model differential equations, \code{m} is the per-capita rate of movement outside of the focal population. The inverse of \code{m} therefore corresponds to the average number of days between an individual's movement events.
 
     When an individual moves outside of their focal population, the model assigns this individual to a new focal population using a dispersal kernel. For now, we implement a simple distance-based dispersal kernal in the form:
-    \code{ prob_move[i][j] = 1 / exp(dist_mat[i][j] / dist_param). }
-Here, as is convention, \code{prob_move[i][j]} corresponds to the probability of individuals in population \code{j} moving to population \code{i}. The \code{dist_param} is user-defined and can be updated daily in the simulaiton (see \code{\link{time_windows}}).
+    \code{ prob_move[i][j] = 1 / exp(dist_mat[i][j] / dist_phi). }
+Here, as is convention, \code{prob_move[i][j]} corresponds to the probability of individuals in population \code{j} moving to population \code{i}. The \code{dist_phi} is user-defined and can be updated daily in the simulaiton (see \code{\link{time_windows}}).
 
     On each day in the model simulation, the tau-leaping algorithm calculates the number of individuals in each class that will move outside of their focal population. We determine which individuals will move to which outside population using a random draw from a multinomial probability distribution, using the \code{prob_move[i][j]} that are calculated as above. Once individuals are assigned to their new, temporary populations, then transmission can occur dependent upon the local composition of infectious individuals.
 

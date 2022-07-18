@@ -6,7 +6,7 @@ class TimeWindow
 {
 public:
     double *beta;    // beta value at the end of time window
-    float dist_param; // Movement range
+    float dist_phi; // Movement range
     float m;          // Movement frequency
     double imm_frac;  // Immigration fraction at end of time window
     double hosp_rate;
@@ -63,36 +63,36 @@ public:
         return 0;
     }
 
-    // dist_param functions
+    // dist_phi functions
     float getMinDistParam()
     {
         if (prev != NULL)
         {
-            if (prev->dist_param < dist_param)
+            if (prev->dist_phi < dist_phi)
             {
-                return prev->dist_param;
+                return prev->dist_phi;
             }
         }
-        return dist_param;
+        return dist_phi;
     }
 
     float getMaxDistParam()
     {
         if (prev != NULL)
         {
-            if (prev->dist_param < dist_param)
+            if (prev->dist_phi < dist_phi)
             {
-                return dist_param;
+                return dist_phi;
             }
         }
-        return prev->dist_param;
+        return prev->dist_phi;
     }
 
     double getDistParamSlope()
     {
         if ((window_length > 1) && (prev != NULL))
         {
-            return (dist_param - prev->dist_param) / window_length;
+            return (dist_phi - prev->dist_phi) / window_length;
         }
         return 0;
     }
@@ -101,7 +101,7 @@ public:
     {
         if (prev != NULL)
         {
-            return prev->dist_param - getDistParamSlope() * t;
+            return prev->dist_phi - getDistParamSlope() * t;
         }
         return 0;
     }
@@ -374,7 +374,7 @@ void clearTimeWindows(TimeWindow *node);
 TimeWindow *importTimeWindowData(int n_pop,
                                  int total,
                                  double *beta,
-                                 double *dist_param,
+                                 double *dist_phi,
                                  double *m,
                                  double *imm_frac,
                                  double *hosp_rate,

@@ -583,7 +583,7 @@ we show how it works behind the scenes (manually):</p>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Migration rate</span></span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>changing_m <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">/</span><span class="fl">10.0</span>, <span class="at">times =</span> n_days)</span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Migration range</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>changing_dist_param <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">150</span>, <span class="at">times =</span> n_days)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>changing_dist_phi <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">150</span>, <span class="at">times =</span> n_days)</span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Immigration (none)</span></span>
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>changing_imm_frac <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="at">times =</span> n_days)</span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
@@ -594,7 +594,7 @@ we show how it works behind the scenes (manually):</p>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>tw <span class="ot">=</span> <span class="fu">time_windows</span>(</span>
 <span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">beta =</span> beta_seq,</span>
 <span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">m =</span> changing_m,</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">dist_param =</span> changing_dist_param,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">dist_phi =</span> changing_dist_phi,</span>
 <span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">imm_frac =</span> changing_imm_frac,</span>
 <span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">hosp_rate =</span> hr_seq,</span>
 <span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>

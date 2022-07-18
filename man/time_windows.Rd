@@ -20,7 +20,7 @@
 \usage{
     time_windows(
         beta=NULL,
-        dist_param=NULL,
+        dist_phi=NULL,
         m=NULL,
         imm_frac=NULL,
         hosp_rate=NULL,
@@ -39,8 +39,8 @@
     \item{beta}{
         \emph{required} - \strong{New in version 1.2.0}: A numeric vector of the time-varying transmission rate. If a single vector is provided, the same transmission rate is used in all populations. You can instead provide a list of transmission rate vectors--one for each population. The number of populations must be equal to those used in the \code{\link{covid19_control}} or \code{\link{seir_control}}.
     }
-    \item{dist_param}{
-        \emph{required} - A numeric vector of the \code{dist_param} that is used to calculate the dispersal kernal (see details below).
+    \item{dist_phi}{
+        \emph{required} - A numeric vector of the \code{dist_phi} that is used to calculate the dispersal kernal (see details below).
     }
     \item{m}{
         \emph{required} - A numeric vector of the \code{m} parameter. The inverse of \code{m} is the average time between individuals moving away from their focal population (see details below).
@@ -78,7 +78,7 @@
 }
 \details{
 
-    See \code{\link{Movement}} for descriptions of \code{m} and \code{dist_param}.
+    See \code{\link{Movement}} for descriptions of \code{m} and \code{dist_phi}.
 
     Defining time window durations. One of the following options is required to define the duration of each time window: \code{window_length}, or \code{start_dates} AND \code{end_dates}, or \code{daily}.
 
@@ -103,7 +103,7 @@ Seth Borkovec, \email{stb224@nau.edu}; Joseph Mihaljevic, \email{joseph.mihaljev
 
 ## Data set for the examples: (All examples include 5 time windows)
 input_beta <-           c(  0.30,  0.10,  0.15,  0.15,  0.20)
-input_dist_param <-     c(   200,   200,    20,   150,   150)
+input_dist_phi <-       c(   200,   200,    20,   150,   150)
 input_m <-              c( 0.002, 0.002, 0.002,  0.02,  0.02)
 input_imm_frac <-       c(   0.0,   0.0,   0.0,  0.02,  0.02)
 input_window_length <-  c(    10,    35,    46,    81,    40)
@@ -115,7 +115,7 @@ input_daily <-          c(seq(as.Date("2020-07-09"), by=1, len=5))
 ### input_window_length defines the number of days
 ### that each value of the other parameters is repeated.
 tw <- time_windows(beta          = input_beta,
-                   dist_param    = input_dist_param,
+                   dist_phi    = input_dist_phi,
                    m             = input_m,
                    imm_frac      = input_imm_frac,
                    window_length = input_window_length)
@@ -123,7 +123,7 @@ tw <- time_windows(beta          = input_beta,
 ## Example using start_dates with end_dates:
 ### Five time windows, each with 10 days
 tw <- time_windows(beta         = input_beta,
-                   dist_param   = input_dist_param,
+                   dist_phi   = input_dist_phi,
                    m            = input_m,
                    imm_frac     = input_imm_frac,
                    start_dates  = input_start_dates,
@@ -132,7 +132,7 @@ tw <- time_windows(beta         = input_beta,
 ## Example using daily:
 ### Parameters are updated daily over 5 days
 tw <- time_windows(beta       = input_beta,
-                   dist_param = input_dist_param,
+                   dist_phi = input_dist_phi,
                    m          = input_m,
                    imm_frac   = input_imm_frac,
                    daily      = input_daily)
@@ -147,7 +147,7 @@ input_beta_list[[3]]      <- c( 0.20,  0.08,  0.10,  0.10,  0.25)
 input_beta_list[[n_pops]] <- c( 0.25,  0.12,  0.08,  0.12,  0.10)
 
 tw <- time_windows(beta          = input_beta_list,
-                   dist_param    = input_dist_param,
+                   dist_phi    = input_dist_phi,
                    m             = input_m,
                    imm_frac      = input_imm_frac,
                    window_length = input_window_length)

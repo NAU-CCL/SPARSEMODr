@@ -202,7 +202,7 @@ for (this_pop in 1:n_pop) {
 # Migration rate
 changing_m = rep(1/10.0, times = n_days)
 # Migration range
-changing_dist_param = rep(100, times = n_days)
+changing_dist_phi = rep(100, times = n_days)
 # Immigration (none)
 changing_imm_frac = rep(0, times = n_days)
 
@@ -210,7 +210,7 @@ changing_imm_frac = rep(0, times = n_days)
 tw = time_windows(
   beta = changing_beta,
   m = changing_m,
-  dist_param = changing_dist_param,
+  dist_phi = changing_dist_phi,
   imm_frac = changing_imm_frac,
   daily = date_seq
 )

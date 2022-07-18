@@ -19,14 +19,14 @@ n_realz <- length(realz_seeds)
 
 # Data for testing
 input_beta <-           c(   0.3,   0.3,  0.08,  0.08,  0.15)
-input_dist_param <-     c(   200,   200,    20,   150,   150)
+input_dist_phi <-       c(   200,   200,    20,   150,   150)
 input_m <-              c( 0.002, 0.002, 0.002,  0.02,  0.02)
 input_imm_frac <-       c(  0.02,  0.02,  0.02,  0.02,  0.02)
 input_window_length <-  c(     0,    36,    10,    35,   169)
 
 # User creates the time_windows object here
 tw <- time_windows(beta = input_beta,
-                   dist_param = input_dist_param,
+                   dist_phi = input_dist_phi,
                    m = input_m,
                    imm_frac = input_imm_frac,
                    window_length = input_window_length)
