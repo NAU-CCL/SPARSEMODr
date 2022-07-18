@@ -48,7 +48,7 @@ Universal Model Interface to the SPARSE-MOD Models
 
     The SPARSE-MOD SEIR Model describes transmission using 4 classes of individuals. Please see the vignettes for a more detailed explanation of the model structure.
 
-    Transmisison types: The day-specific transmission rate (beta) is back-calculated from the user-provided value(s) of R0 (pronounced R-naught). See \code{\link{Time-varying R0}} for details. We allow for two transmission types:
+    Transmisison types: The day-specific transmission rate (beta) must be supplied. We allow for two transmission types:
     \enumerate{
         \item{Frequency-dependent transmission: In this case the transmission function is: \deqn{beta_scaled = beta / pop_N.} This is calculated per sub-population. 
         }
