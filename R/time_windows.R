@@ -22,7 +22,6 @@
 # he number of populations must be
 # equal to the number of populations used in the covid19_control or seir_control.
 time_windows <- function(beta=NULL,
-                         r0 = NULL,
                          dist_param=NULL,
                          m=NULL,
                          imm_frac=NULL,
@@ -33,7 +32,8 @@ time_windows <- function(beta=NULL,
                          window_length=NULL,
                          start_dates=NULL,
                          end_dates=NULL,
-                         daily=NULL)
+                         daily=NULL,
+                         r0 = NULL)
 {
     # Check if data is Date type
     is.Date <- function(obj) inherits(obj, "Date")
