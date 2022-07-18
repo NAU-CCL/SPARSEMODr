@@ -108,6 +108,9 @@ Universal Model Interface to the SPARSE-MOD Models
 ## for an example to run realizations in parallel
 
 ##########################################
+# Required for run:
+require(lubridate)
+
 ## Using supplied example data:
 
 # Read in the example data:
