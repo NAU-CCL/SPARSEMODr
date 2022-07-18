@@ -51,6 +51,9 @@ Parallelized implementation of the SPARSE-MOD models
 
 
 ##########################################
+# Required for run:
+require(lubridate)
+
 ## Using supplied example data:
 
 # Read in the example data:
