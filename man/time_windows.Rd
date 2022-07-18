@@ -30,7 +30,8 @@
         window_length=NULL,
         start_dates=NULL,
         end_dates=NULL,
-        daily=NULL
+        daily=NULL,
+        r0=NULL
     )
 }
 %- maybe also 'usage' for other objects documented here.
@@ -70,6 +71,9 @@
     }
     \item{daily}{
         A vector of Date objects that is sequential and complete, encompassing all dates from the start of the outbreak to the end of the outbreak (see details below).
+    }
+    \item{r0}{
+        No longer supported. Gives error message to provide beta instead.
     }
 }
 \details{
