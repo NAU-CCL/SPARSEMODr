@@ -7,6 +7,7 @@ Change log:
 - All vignettes have been updated to represent these changes. Also the vignettes demonstrate how the user can have population-specific vectors of the time-varying parameter, "beta".
 
 ################################################################################
+
 Version 1.1.0 - 2021.06.18
 
 Change log:
@@ -26,4 +27,4 @@ Bug fixes:
 
 Version 1.0.0 - 2020.12.03
 
-Initial release.
+- Initial release
