@@ -27,3 +27,4 @@ Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 LinkingTo: Rcpp
 Depends: R (>= 3.5.0)
+SystemRequirements: GNU GSL (>= 2.7)
