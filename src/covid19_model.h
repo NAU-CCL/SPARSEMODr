@@ -81,11 +81,11 @@ typedef struct
 } COVID19MoveMatStruct;
 
 
-struct covid_beta_calc_struct
-{
-    float r0;
-    COVID19ParamStruct *Params;
-};
+// struct covid_beta_calc_struct
+// {
+//     float r0;
+//     COVID19ParamStruct *Params;
+// };
 
 
 int covid19_model(
@@ -156,5 +156,5 @@ void update_pop_migrants(
     COVID19MoveMatStruct MovePops,
     gsl_rng *rand1
 );
-double covid19_beta_calc (double beta, void *params);
-double calculateBeta(float r0, COVID19ParamStruct *Params);
+// double covid19_beta_calc (double beta, void *params);
+// double calculateBeta(float r0, COVID19ParamStruct *Params);

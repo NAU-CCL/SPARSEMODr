@@ -5,8 +5,8 @@ using namespace std;
 class TimeWindow
 {
 public:
-    double *r0;    // R0 value at the end of time window
-    float dist_param; // Movement range
+    double *beta;    // beta value at the end of time window
+    float dist_phi; // Movement range
     float m;          // Movement frequency
     double imm_frac;  // Immigration fraction at end of time window
     double hosp_rate;
@@ -20,79 +20,79 @@ public:
 
     ///// Class functions
 
-    // R0 functions
-    float getMinR0(int index)
+    // beta functions
+    float getMinbeta(int index)
     {
         if (prev != NULL)
         {
-            if (prev->r0[index] < r0[index])
+            if (prev->beta[index] < beta[index])
             {
-                return prev->r0[index];
+                return prev->beta[index];
             }
         }
-        return r0[index];
+        return beta[index];
     }
 
-    float getMaxR0(int index)
+    float getMaxbeta(int index)
     {
         if (prev != NULL)
         {
-            if (prev->r0[index] < r0[index])
+            if (prev->beta[index] < beta[index])
             {
-                return r0[index];
+                return beta[index];
             }
         }
-        return prev->r0[index];
+        return prev->beta[index];
     }
 
-    double getR0Slope(int index)
+    double getbetaSlope(int index)
     {
         if ((window_length > 1) && (prev != NULL))
         {
-            return (r0[index] - prev->r0[index]) / window_length;
+            return (beta[index] - prev->beta[index]) / window_length;
         }
         return 0;
     }
 
-    double getR0Intercept(int index, int t=0)
+    double getbetaIntercept(int index, int t=0)
     {
         if (prev != NULL)
         {
-            return prev->r0[index] - getR0Slope(index) * t;
+            return prev->beta[index] - getbetaSlope(index) * t;
         }
         return 0;
     }
 
-    // dist_param functions
+    // dist_phi functions
     float getMinDistParam()
     {
         if (prev != NULL)
         {
-            if (prev->dist_param < dist_param)
+            if (prev->dist_phi < dist_phi)
             {
-                return prev->dist_param;
+                return prev->dist_phi;
             }
         }
-        return dist_param;
+        return dist_phi;
     }
 
     float getMaxDistParam()
     {
         if (prev != NULL)
         {
-            if (prev->dist_param < dist_param)
+            if (prev->dist_phi < dist_phi)
             {
-                return dist_param;
+                return dist_phi;
             }
         }
-        return prev->dist_param;
+        return prev->dist_phi;
     }
 
     double getDistParamSlope()
     {
         if ((window_length > 1) && (prev != NULL))
         {
-            return (dist_param - prev->dist_param) / window_length;
+            return (dist_phi - prev->dist_phi) / window_length;
         }
         return 0;
     }
@@ -101,7 +101,7 @@ public:
     {
         if (prev != NULL)
         {
-            return prev->dist_param - getDistParamSlope() * t;
+            return prev->dist_phi - getDistParamSlope() * t;
         }
         return 0;
     }
@@ -373,8 +373,8 @@ TimeWindow *addTimeWindow(TimeWindow *node, TimeWindow *new_node);
 void clearTimeWindows(TimeWindow *node);
 TimeWindow *importTimeWindowData(int n_pop,
                                  int total,
-                                 double *r0,
-                                 double *dist_param,
+                                 double *beta,
+                                 double *dist_phi,
                                  double *m,
                                  double *imm_frac,
                                  double *hosp_rate,

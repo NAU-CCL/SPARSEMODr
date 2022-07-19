@@ -1,7 +1,7 @@
 ---
 title: "SPARSE-MOD COVID-19 Model"
 author: "JR Mihaljevic"
-date: "December 2020"
+date: "July 2022"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{SPARSE-MOD COVID-19 Model}
@@ -30,11 +30,11 @@ future::plan("sequential")
 
 ## The COVID-19 Example Model
 
-Here we present a walk-through of using the SPARSE-MOD COVID-19 Model, which our research group has been using to advise Arizona Dept. of Health Services during the pandemic. Note that we personally recommend using this R package in an exploratory and educational capacity, not as a mechanism with which to forecast or predict dynamics into the future. See [our vignette on key features of SPARSEMODr](key-features.html) for more general details of the SPARSEMODr package. And see the end of this vignette for model equations.
+Here we present a walk-through of using the SPARSE-MOD COVID-19 Model, which represents simplified dynamics of transmission of SARS-CoV-2 and COVID-19 progression of patients through the hospital system. The model does not include multiple viral variants, nor does it include vaccination. Therefore, we personally recommend using this R package in an exploratory and educational capacity, not as a mechanism with which to forecast or project disease dynamics. See [our vignette on key features of SPARSEMODr](key-features.html) for more general details of the SPARSEMODr package. And see the end of this vignette for model equations.
 
 ### Generating a synthetic meta-population
 
-First, we will generate some data that describes the meta-population^[A set of distinct, focal populations that are connected by migration] of interest.
+First, we will simulate data that describes the meta-population^[A set of distinct, focal populations that are connected by migration] of interest.
 
 ```{r, fig.show='hold'}
 # Set seed for reproducibility
@@ -72,7 +72,7 @@ for(i in 1 : n_pop){
   } else if((lat_temp[i] < 34.5) & (long_temp[i] <= -111.5)){
     region[i] = "3"
     pop_N[i] = rnbinom(1, mu = 10000, size = 3)
-  }
+  } 
 }
 
 pop_local_df =
@@ -81,25 +81,21 @@ pop_local_df =
              census_area,
              lat = lat_temp,
              long = long_temp,
-             region = region)
-
-# pop_N min and max
-# min_pop = round(range(pop_local_df$pop_N)[1]/ 5000)*5000
-# max_pop = round((range(pop_local_df$pop_N)[2])/50000)*50000
+             region = region) 
 
 # Plot the map:
 pop_plot = ggplot(pop_local_df) +
-  geom_point(aes(x = long, y = lat,
+  geom_point(aes(x = long, y = lat, 
                  fill = region, size = pop_N),
              shape = 21) +
-  scale_size(name = "Pop. Size", range = c(1,5),
+  scale_size(name = "Pop. Size", range = c(1,5), 
              breaks = c(5000, 50000, 150000)) +
   scale_fill_manual(name = "Region", values = c("#00AFBB", "#D16103",
                                                 "#E69F00", "#4E84C4")) +
   geom_hline(yintercept = 34.5, colour = "#999999", linetype = 2) +
   geom_vline(xintercept = -111.5, colour = "#999999", linetype = 2) +
-  guides(size = guide_legend(order = 2),
-         fill = guide_legend(order = 1,
+  guides(size = guide_legend(order = 2), 
+         fill = guide_legend(order = 1, 
                              override.aes = list(size = 3))) +
   # Map coord
   coord_quickmap() +
@@ -138,9 +134,9 @@ pop_local_df$E_pops = E_pops
 
 ### Setting up the time-windows
 
-One of the benefits of the SPARSEMODr design is that the user can specify how certain parameters of the model change over time (see [our vignette on key features of SPARSEMODr](key-features.html) for more details). We demonstrate this below. In this particular example, we allow the time-varying R0 to change in a step-wise fashion due to 'interventions', but we assume host migration dynamics are static. Note that when the parameter values change between two time windows, the model assumes a linear change over the number of days in that window. In other words, the user specifies the value of the parameter achieved on the *last day* of the time window.
+One of the benefits of the SPARSEMODr is that the user can specify how the values of certain parameters of the model change over time (see [our vignette on key features of SPARSEMODr](key-features.html) for more details). We demonstrate this below, where we allow the time-varying transmission rate, $\beta_{t}$, to change in a step-wise fashion due to, for instance, changes in the behavior of the host population. In this case, we assume the transmission rate changes during discrete blocks of time, or time windows. When the parameter values change between two time windows, the model imputes a linear change over the number of days in that window. In other words, the user specifies the value of the parameter achieved on the *last day* of the time window. In other vignettes, we show how the user can instead specify daily values of the time-varying parameters, which allows for more flexibility. Here, we also assume host migration dynamics are invariable across time.
 
-We'll use the $\texttt{time_windows()}$ function to generate a pattern of time-varying R0 that looks like the following:
+We'll use the $\texttt{time_windows()}$ function to generate a pattern of $\beta_{t}$ that looks like the following:
 
 ```{r, , fig.width=5, echo=FALSE}
 # Set up the dates of change. 5 time windows
@@ -152,49 +148,49 @@ end_dates =   c(mdy("1-31-20"), mdy("2-15-20"), mdy("3-10-20"), mdy("3-21-20"), 
 # Date sequence
 date_seq = seq.Date(start_dates[1], end_dates[n_windows], by = "1 day")
 
-# Time-varying R0
-changing_r0 = c(3.0,            0.8,            0.8,            1.4,            1.4)
+# Time-varying beta
+changing_beta = c(0.3,            0.1,            0.1,            0.15,            0.15)
 
-#R0 sequence
-r0_seq = NULL
+#beta sequence
+beta_seq = NULL
 
-r0_seq[1:(yday(end_dates[1]) - yday(start_dates[1]) + 1)] =
-  changing_r0[1]
+beta_seq[1:(yday(end_dates[1]) - yday(start_dates[1]) + 1)] =
+  changing_beta[1]
 
 for(i in 2:n_windows){
 
-  r0_temp_seq = NULL
-  r0_temp = NULL
+  beta_temp_seq = NULL
+  beta_temp = NULL
 
-  if(changing_r0[i] != changing_r0[i-1]){
+  if(changing_beta[i] != changing_beta[i-1]){
 
-    r0_diff = changing_r0[i-1] - changing_r0[i]
+    beta_diff = changing_beta[i-1] - changing_beta[i]
     n_days = yday(end_dates[i]) - yday(start_dates[i]) + 1
-    r0_slope = - r0_diff / n_days
+    beta_slope = - beta_diff / n_days
 
     for(j in 1:n_days){
-      r0_temp_seq[j] = changing_r0[i-1] + r0_slope*j
+      beta_temp_seq[j] = changing_beta[i-1] + beta_slope*j
     }
 
   }else{
     n_days = yday(end_dates[i]) - yday(start_dates[i]) + 1
-    r0_temp_seq = rep(changing_r0[i], times = n_days)
+    beta_temp_seq = rep(changing_beta[i], times = n_days)
   }
 
-  r0_seq = c(r0_seq, r0_temp_seq)
+  beta_seq = c(beta_seq, beta_temp_seq)
 
 }
 
-r0_seq_df = data.frame(r0_seq, date_seq)
+beta_seq_df = data.frame(beta_seq, date_seq)
 date_breaks = seq(range(date_seq)[1],
                   range(date_seq)[2],
                   by = "1 month")
 
 
-ggplot(r0_seq_df) +
-  geom_path(aes(x = date_seq, y = r0_seq)) +
+ggplot(beta_seq_df) +
+  geom_path(aes(x = date_seq, y = beta_seq)) +
   scale_x_date(breaks = date_breaks, date_labels = "%b") +
-  labs(x="", y="Time-varying R0") +
+  labs(x="", y=expression("Time-varying "*beta*", ("*beta[t]*")")) +
   # THEME
   theme_classic()+
   theme(
@@ -206,7 +202,7 @@ ggplot(r0_seq_df) +
 ```
 
 
-Importantly, SPARSEMODr allows the user to assign unique patterns of time-varying R0 *for each population*. Below, we will assume that the pattern of time-varying R0 is unique for each region on the map, above. Correspondingly, each population within the region of interest will have the same pattern of time-varying R0. In this scenario, then, each region has different transmission dynamics, and movement among regions can influence the regional patterns of disease and the local patterns within individual populations.
+Importantly, SPARSEMODr allows the user to assign unique patterns of time-varying $\beta$ *for each population*. Below, we will assume that the pattern of $\beta_{t}$ is unique for each region on the map, above. Correspondingly, each population within the region of interest will have the same pattern of $\beta_{t}$. In this scenario, then, each region has different transmission dynamics, and movement of hosts among regions can influence the local (i.e., within a single population) and regional patterns of disease. 
 
 ```{r}
 # Set up the dates of change. 5 time windows
@@ -217,33 +213,34 @@ end_dates =   c(mdy("1-31-20"), mdy("2-15-20"), mdy("3-10-20"), mdy("3-21-20"), 
 
 ### TIME-VARYING PARAMETERS ###
 
-# R0 pattern per region
-region_r0 = list(
-    "1"=c(3.0, 0.8, 0.8, 1.4, 1.4),
-    "2"=c(3.0, 1.5, 1.5, 0.5, 0.5),
-    "3"=c(3.0, 2.3, 2.3, 4.0, 4.0),
-    "4"=c(3.0, 0.8, 0.8, 0.5, 0.5)
+# beta pattern per region
+region_beta = list(
+    "1"=c(0.30, 0.10, 0.10, 0.15, 0.15),
+    "2"=c(0.30, 0.08, 0.08, 0.10, 0.10),
+    "3"=c(0.30, 0.12, 0.12, 0.19, 0.19),
+    "4"=c(0.30, 0.03, 0.03, 0.12, 0.12)
 )
-## Assign the appropriate, regional pattern of R0
+
+## Assign the appropriate, regional pattern of beta
 ## to each population
-changing_r0 = vector("list", length = n_pop)
+changing_beta = vector("list", length = n_pop)
 for (this_pop in 1:n_pop) {
     this_region <- pop_local_df$region[this_pop]
-    changing_r0[[this_pop]] <- region_r0[[this_region]]
+    changing_beta[[this_pop]] <- region_beta[[this_region]]
 }
 
 # Migration rate
 changing_m = rep(1/10.0, times = n_windows)
 # Migration range
-changing_dist_param = rep(150, times = n_windows)
+changing_dist_phi = rep(150, times = n_windows)
 # Immigration (none)
 changing_imm_frac = rep(0, times = n_windows)
 
 # Create the time_window() object
 tw = time_windows(
-  r0 = changing_r0,
+  beta = changing_beta,
   m = changing_m,
-  dist_param = changing_dist_param,
+  dist_phi = changing_dist_phi,
   imm_frac = changing_imm_frac,
 
   start_dates = start_dates,
@@ -368,24 +365,12 @@ plot_new_hosp_base =
       # New Hosp Range:
       scale_y_continuous(limits = c(0, max_hosp*1.05)),
       # BOXES AND TEXT TO LABEL TIME WINDOWS
-      ## R0 = 3.0
-      # annotate("text", label = paste0("R0 = ", format(changing_r0[1], nsmall = 1)),
-      #          color = "#39558CFF", hjust = 0, vjust = 1, size = 3.0,
-      #          x = start_dates[1], y = max_hosp*1.05),
       annotate("rect", xmin = start_dates[1], xmax = end_dates[1],
                ymin = 0, ymax = max_hosp*1.05,
                fill = "gray", alpha = 0.2),
-      ## R0 = 0.8
-      # annotate("text", label = paste0("R0 = ", changing_r0[3]),
-      #          color = "#39558CFF", hjust = 0, vjust = 1, size = 3.0,
-      #          x = start_dates[3], y = max_hosp*1.05),
       annotate("rect", xmin = start_dates[3], xmax = end_dates[3],
                ymin = 0, ymax = max_hosp*1.05,
                fill = "gray", alpha = 0.2),
-      ## R0 = 1.4
-      # annotate("text", label = paste0("R0 = ", changing_r0[5]),
-      #          color = "#39558CFF", hjust = 0, vjust = 1, size = 3.0,
-      #          x = start_dates[5], y = max_hosp*1.05),
       annotate("rect", xmin = start_dates[5], xmax = end_dates[5],
                ymin = 0, ymax = max_hosp*1.05,
                fill = "gray", alpha = 0.2),
@@ -414,14 +399,14 @@ region_labs = paste0("Region ",
                      sort(unique(region_df$region)))
 names(region_labs) = sort(unique(region_df$region))
 
-# Regional R0 labels
-region_r0_df = data.frame(
-  r0_lab = paste0("R0 = ",format(unlist(lapply(region_r0, function(x){x[c(1,3,5)]})),nsmall = 1)),
+# Regional beta labels
+region_beta_df = data.frame(
+  beta_lab = paste0("beta = ",format(unlist(lapply(region_beta, function(x){x[c(1,3,5)]})),nsmall = 1)),
   region = as.character(rep(c(1:4), each=3)),
   date = rep(start_dates[c(1,3,5)],times=4),
   new_hosp = max_hosp*1.05
 )
-
+  
 
 # Create the plot:
 plot_new_hosp =
@@ -440,14 +425,14 @@ plot_new_hosp =
   geom_path(data = new_event_median_df,
             aes(x = date, y = med_new_hosp, color = region),
             size = 2) +
-  # Add the R0 labels:
-  geom_text(data = region_r0_df,
-            aes(x = date, y = new_hosp, label = r0_lab),
+  # Add the beta labels:
+  geom_text(data = region_beta_df,
+            aes(x = date, y = new_hosp, label = beta_lab),
             color = "#39558CFF", hjust = 0, vjust = 1, size = 3.0) +
   # Colors per region:
-  scale_color_manual(values = c("#00AFBB", "#D16103",
+  scale_color_manual(values = c("#00AFBB", "#D16103", 
                                 "#E69F00", "#4E84C4")) +
-  guides(color=FALSE)
+  guides(color="none")
 
 
 plot_new_hosp
@@ -487,12 +472,12 @@ $$\lambda_{t} =  \frac{\omega_{1} I_a + I_p + I_s + I_b + \omega_2 \left( I_h + 
 | $I_{c1}$ | Number of individuals in the ICU|
 | $I_{c2}$ | Number of individuals in the recovery (step-down) ICU|
 | $D$ | Number of deceased individuals |
-| $R$ | Number of recovered individuals |
+| $R$ | Number of susceptible individuals |
 
 
 | Parameter | Description | Corresponding model input |
 | :--- | :---------------- | :------- |
-| $\beta_t$ | Time-varying transmission rate | *Internally calculated* |
+| $\beta_t$ | Time-varying transmission rate | $\texttt{beta}$ |
 | $\omega_1$ | Proportion reduction in transmission for asymptomatic folks | $\texttt{frac_beta_asym}$ |
 | $\omega_2$ | Proportion reduction in transmission for hospitalized folks | $\texttt{frac_beta_hosp}$ |
 | $N$ | Total number of individuals in population | $\texttt{input_N_pops}$ |
@@ -500,7 +485,7 @@ $$\lambda_{t} =  \frac{\omega_{1} I_a + I_p + I_s + I_b + \omega_2 \left( I_h + 
 | $\delta_2$ | Transition rate: pre-symptomatic to symptomatic | $\texttt{recov_p}$ |
 | $\delta_3$ | Transition rate: symptomatic to home or regular hospital bed or ICU | $\texttt{recov_s}$ |
 | $\delta_4$ | Transition rate: regular hospital bed to home or ICU | $\texttt{recov_hosp}$ |
-| $\delta_5$ | Transition rate: ICU to step-down ICU or death | $\texttt{recov_icu1}$ |
+| $\delta_5$ | Transition rate: ICU to step-down ICU | $\texttt{recov_icu1}$ |
 | $\gamma_{a}$ | Recovery rate: asymptomatic | $\texttt{recov_a}$ |
 | $\gamma_{b}$ | Recovery rate: home bed | $\texttt{recov_home}$ |
 | $\gamma_{c}$ | Recovery rate: step-down ICU | $\texttt{recov_icu2}$ |

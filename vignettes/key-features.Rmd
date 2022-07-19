@@ -1,7 +1,7 @@
 ---
 title: "SPARSE-MOD Key Features"
 author: "JR Mihaljevic"
-date: "December 2020"
+date: "July 2022"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{SPARSE-MOD Key Features}
@@ -29,7 +29,7 @@ SPARSE-MOD stands for **SPA**tial **R**esolution-**SE**nsitive **M**odels of **O
 
 * **Spatially explicit models** that allow user-defined meta-populations^[A set of distinct, focal populations that are connected by migration] characteristics and a customizable dispersal kernel (see below).
 
-* **Customizable process time-windows**: The user controls how the time-varying R0^[Also known as the effective reproduction number or the instantaneous R0 (Rt)] and the dynamics of host migration change during the simulated outbreak. We have created $\texttt{time_window}$ objects that allow users to simulate, for example, time periods over which public health or conservation interventions are implemented that can affect the effective contact between hosts or the movement of hosts among populations.
+* **Customizable process time-windows**: The user controls how model parameters can vary over time, such as the transmission rate, or parameters that define the host migration processes. We have created $\texttt{time_window}$ objects that allow users to simulate, for example, time periods over which public health or conservation interventions are implemented that can affect the contact rates between hosts or the movement of hosts among populations.
 
 * **Demographic stochasticity**^[The effects of probabilistic events that befall a population and that can affect epidemic trajectories.] is built-in using a tau-leaping algorithm^[Models are based off of differential equation models, but we use a tau-leaping algorithm - in the Gillespie family - to simulate the model one day at a time.]. This captures the random transmission processes that are important early in outbreaks and especially in small host populations.
 
@@ -37,65 +37,67 @@ SPARSE-MOD stands for **SPA**tial **R**esolution-**SE**nsitive **M**odels of **O
 
 * The transmission process can be simulated as **frequency-dependent** (i.e., contact rates are invariable to population density) or **density-dependent** (i.e., contact rates depend on population density). For density-dependent transmission, we allow the user to custom-define a (non-)linear relationship between local host density and the transmission rate (see below).
 
-* Models are **coded in C++** and take advantage of Rcpp for rapid simulation of stochastic model trajectories across many focal populations.
+* Models are **coded in C++** and take advantage of Rcpp for rapid simulation of stochastic model trajectories across many focal populations. We also demonstrate how independent realizations of the stochastic models can be run in parallel using the $\texttt{future}$ R package.
 
 ## In-depth...
 
 ### Time windows
 
-One of the benefits of the SPARSEMODr design is that the user can specify how certain parameters of the model change over time. In this particular example, we show how the time-varying R0 changes in a stepwise fashion due to 'interventions' and 'release of interventions'. We assume that when a parameter value changes between two time windows, there is a linear change over the number of days in that window. In other words, the user specifies the value of the parameter acheived on the *last day* of the time window. Note, however, that the user is allowed to supply *daily* parameter values to avoid this linear-change assumption. Here we show an example of a pattern of time-varying R0 that the user might specify, and how the C++ code is essentially interpretting these values on the back-end.
+One of the benefits of the SPARSEMODr design is that the user can specify how the values of certain model parameters might change over time. In this particular example, we show how the time-varying transmission rate, $\beta_{t}$ might change in a stepwise fashion due to 'interventions' and 'release of interventions'. We assume that when a parameter value changes between two time windows, there is a linear change over the number of days in that window. In other words, the user specifies the value of the parameter acheived on the *last day* of the time window. Note, however, that the user is instead allowed to supply *daily* parameter values to avoid this linear-change assumption. Here we show an example of a pattern of time-varying transmission rate that a user might specify, and how the C++ code is interpreting these values on the back-end.
 
 ```{r, fig.width=5}
 # Set up the dates of change. 5 time windows
 n_windows = 5
 # Window intervals
-start_dates = c(mdy("1-1-20"),  mdy("2-1-20"),  mdy("2-16-20"), mdy("3-11-20"), mdy("3-22-20"))
-end_dates   = c(mdy("1-31-20"), mdy("2-15-20"), mdy("3-10-20"), mdy("3-21-20"), mdy("5-1-20"))
-# Time-varying R0
-changing_r0 = c(3.0,            0.8,            0.8,            1.4,            1.4)
+start_dates = c(mdy("1-1-20"),  mdy("2-1-20"),  mdy("2-16-20"), mdy("3-11-20"),  mdy("3-22-20"))
+end_dates =   c(mdy("1-31-20"), mdy("2-15-20"), mdy("3-10-20"), mdy("3-21-20"), mdy("5-1-20"))
 
-#R0 sequence
-r0_seq = NULL
+# Date sequence
+date_seq = seq.Date(start_dates[1], end_dates[n_windows], by = "1 day")
 
-r0_seq[1:(yday(end_dates[1]) - yday(start_dates[1]) + 1)] =
-  changing_r0[1]
+# Time-varying beta
+changing_beta = c(0.3,            0.1,            0.1,            0.15,            0.15)
+
+#beta sequence
+beta_seq = NULL
+
+beta_seq[1:(yday(end_dates[1]) - yday(start_dates[1]) + 1)] =
+  changing_beta[1]
 
 for(i in 2:n_windows){
 
-  r0_temp_seq = NULL
-  r0_temp = NULL
+  beta_temp_seq = NULL
+  beta_temp = NULL
 
-  if(changing_r0[i] != changing_r0[i-1]){
+  if(changing_beta[i] != changing_beta[i-1]){
 
-    r0_diff = changing_r0[i-1] - changing_r0[i]
+    beta_diff = changing_beta[i-1] - changing_beta[i]
     n_days = yday(end_dates[i]) - yday(start_dates[i]) + 1
-    r0_slope = - r0_diff / n_days
+    beta_slope = - beta_diff / n_days
 
     for(j in 1:n_days){
-      r0_temp_seq[j] = changing_r0[i-1] + r0_slope*j
+      beta_temp_seq[j] = changing_beta[i-1] + beta_slope*j
     }
 
   }else{
     n_days = yday(end_dates[i]) - yday(start_dates[i]) + 1
-    r0_temp_seq = rep(changing_r0[i], times = n_days)
+    beta_temp_seq = rep(changing_beta[i], times = n_days)
   }
 
-  r0_seq = c(r0_seq, r0_temp_seq)
+  beta_seq = c(beta_seq, beta_temp_seq)
 
 }
 
-# Create a data frame for plotting
-## Date sequence:
-date_seq = seq.Date(start_dates[1], end_dates[n_windows], by = "1 day")
-r0_seq_df = data.frame(r0_seq, date_seq)
+beta_seq_df = data.frame(beta_seq, date_seq)
 date_breaks = seq(range(date_seq)[1],
                   range(date_seq)[2],
                   by = "1 month")
 
-ggplot(r0_seq_df) +
-  geom_path(aes(x = date_seq, y = r0_seq)) +
+
+ggplot(beta_seq_df) +
+  geom_path(aes(x = date_seq, y = beta_seq)) +
   scale_x_date(breaks = date_breaks, date_labels = "%b") +
-  labs(x="", y="Time-varying R0") +
+  labs(x="", y=expression("Time-varying "*beta*", ("*beta[t]*")")) +
   # THEME
   theme_classic()+
   theme(
@@ -104,27 +106,28 @@ ggplot(r0_seq_df) +
     axis.text.x = element_text(angle = 45, vjust = 0.5)
   )
 
+
 ```
 
 ### Dispersal kernel
 
-As we discuss in the documentation (see $\texttt{?SPARSEMODr::Movement}$), we allow migration between populations in the meta-population to affect local and regional transmission dynamics. For now, migration is determined by a simple dispersal kernel, although we are working on adding more customizable gravity kernels. The user can control the shape of this kernel with the $\texttt{dist_param}$ option, as follows:
-$$ p_{i,j} = \frac{1}{\text{exp}(d_{i,j} / \text{dist_param})}, $$
+As we discuss in the documentation (see $\texttt{?SPARSEMODr::Movement}$), we allow migration between populations in the meta-population to affect local and regional transmission dynamics. For now, migration is determined by a simple dispersal kernel, although we are working on adding more customizable gravity kernels. The user can control the shape of this kernel with the $\texttt{dist_phi}$ option, as follows:
+$$ p_{i,j} = \frac{1}{\text{exp}(d_{i,j} / \phi)}, $$
 where $p_{i,j}$ is the probability of moving from population $j$ to population $i$ and $d_{i,j}$ is the euclidean distance between the two populations.
 
-We can see how the $\texttt{dist_param}$ controls the probability below. In general, larger values of $\texttt{dist_param}$ make it more likely for hosts to travel farther distances.
+We can see how $\phi$ (i.e., $\texttt{dist_phi}$ in the model input) controls the probability below. In general, larger values of $\texttt{dist_phi}$ make it more likely for hosts to travel farther distances.
 
 ```{r, fig.width=5, echo=FALSE}
 
 # Distance between populations:
 dist_temp = seq(0, 300, length.out = 200)
-dist_param = c(50, 100, 200)
+dist_phi = c(50, 100, 200)
 
-p_move_func = function(dist_param, distance){
-  1 / (exp( distance / dist_param ))
+p_move_func = function(dist_phi, distance){
+  1 / (exp( distance / dist_phi ))
 }
 
-p_move_mat = sapply(dist_param,
+p_move_mat = sapply(dist_phi,
                     p_move_func, distance = dist_temp)
 p_move_df =
   data.frame(dist_ij = dist_temp, p_move_mat) %>%
@@ -140,7 +143,7 @@ ggplot(p_move_df) +
                 color = dp_val, group = dp_val)) +
   labs(x = "Distance between pops (km)",
        y = "Probability of migration") +
-  scale_color_viridis_d(name = "dist_param",
+  scale_color_viridis_d(name = expression(phi),
                         breaks = c("50", "100", "200"),
                         direction = -1) +
   theme_classic() +
@@ -154,11 +157,19 @@ ggplot(p_move_df) +
 
 ```
 
-### Density-dependent Transmission
+### Transmission Types
 
-As we describe in the documentation (e.g., see $\texttt{?SPARSEMODr::model_interface}$), we allow the user to implement frequency-dependent or density-dependent (DD) transmission in the SPARSEMODr models. For DD transmission, the user can specify a (non-)linear Monod equation that describes the relationship between host population density and the transmission rate $\beta$ via the model's (optional) parameter, $\texttt{dd_trans_monod_k}$. The Monod equation is:
+As we describe in the documentation (e.g., see $\texttt{?SPARSEMODr::model_interface}$), we allow the user to implement frequency-dependent (FD) or density-dependent (DD) transmission in the SPARSEMODr models. 
+
+For FD transmission, we divide the user-specified value of transmission rate by the total number of hosts within a given sub-population. For example, in the classic SEIR model, where S, E, I, and R, are the *numbers* (i.e., integers) of susceptible, exposed, infectious, and recovered hosts, respectively, we would have the following expression describing mass-action transmission per sub-population, $i$:
+$$ \beta_i \frac{S_i}{N_i} I_i, $$
+where $\beta_{i}$ is the user-specified transmission rate for sub-population $i$, and $N_{i}$ is the total host population size for sub-population $i$. 
+Therefore, with FD transmission, the effect of a single infectious host on the risk of infection is modulated by the fraction of the host population that is still susceptible, irrespective of the host population density (i.e., number of hosts per unit area) within that sub-population. 
+
+
+Alternatively, for DD transmission, the user can specify a (non-)linear Monod equation that describes the relationship between host population density and the transmission rate $\beta$ via the model's (optional) parameter, $\texttt{dd_trans_monod_k}$. The Monod equation is:
 $$ \beta_{\text{realized}} = \beta_{\text{max}} \frac{\text{Dens}}{K + \text{Dens}}, $$
-where $\beta_{\text{max}}$ is the maximum possible transmission rate across all densities, $\texttt{Dens}$ is the density of the focal host population, and $K$ is a constant that controls the effect of density on the transmission rate and is user-controlled by specifying $\texttt{dd_trans_monod_k}$. More specifically, $K$ is the half-velocity constant at which point $\beta_{\text{realized}}/\beta_{\text{max}} = 0.5$.  
+where $\beta_{\text{max}}$ is the maximum possible transmission rate across all densities, $\texttt{Dens}$ is the density of the focal host population (i.e., number of hosts per unit area), and $K$ is a constant that controls the effect of density on the transmission rate and is user-controlled by specifying $\texttt{dd_trans_monod_k}$. More specifically, $K$ is the half-velocity constant at which point $\beta_{\text{realized}}/\beta_{\text{max}} = 0.5$.  
 
 We can see how $\texttt{dd_trans_monod_k}$ controls the transmission rate below. In general, larger values of $\texttt{dd_trans_monod_k}$ mean that transmission rate is more strongly limited by population density.
 

@@ -48,11 +48,11 @@ Universal Model Interface to the SPARSE-MOD Models
 
     The SPARSE-MOD SEIR Model describes transmission using 4 classes of individuals. Please see the vignettes for a more detailed explanation of the model structure.
 
-    Transmisison types: The day-specific transmission rate (beta) is back-calculated from the user-provided value(s) of R0 (pronounced R-naught). See \code{\link{Time-varying R0}} for details. We allow for two transmission types:
+    Transmisison types: The day-specific transmission rate (beta) must be supplied. We allow for two transmission types:
     \enumerate{
-        \item{Frequency-dependent transmission: In this case the transmission function is: \deqn{beta_scaled = beta / pop_N.}
+        \item{Frequency-dependent transmission: In this case the transmission function is: \deqn{beta_scaled = beta / pop_N.} This is calculated per sub-population. 
         }
-        \item{Density-dependent transmission: In this case, we allow a user-defined Monod equation to scale the beta term by population density, where \eqn{pop_density = pop_N / census_area} :
+        \item{Density-dependent transmission: In this case, we allow a user-defined Monod equation to scale the beta term by sub-population density, where \eqn{pop_density = pop_N / census_area} :
             \deqn{
                 beta_scaled = (beta * pop_dens / (dd_trans_monod_k + pop_dens)) / pop_N
             }
@@ -108,6 +108,9 @@ Universal Model Interface to the SPARSE-MOD Models
 ## for an example to run realizations in parallel
 
 ##########################################
+# Required for run:
+require(lubridate)
+
 ## Using supplied example data:
 
 # Read in the example data:
@@ -121,18 +124,22 @@ realz_seeds <- 1:2
 n_realz <- length(realz_seeds)
 
 # Set up time windows (see time_windows for other ways to do this)
-input_R0 <-             c(   2.0,   2.0,   0.8,   0.8,   1.5)
-input_dist_param <-     c(   200,   200,    20,   150,   150)
+input_beta <-           c(   0.3,   0.3,  0.08,  0.08,  0.15)
+input_dist_phi <-       c(   200,   200,    20,   150,   150)
 input_m <-              c( 0.002, 0.002, 0.002,  0.02,  0.02)
 input_imm_frac <-       c(   0.0,   0.0,   0.0,  0.02,  0.02)
-input_window_length <-  c(     0,    36,    10,    35,   169)
+# Window intervals
+start_dates = c(mdy("1-1-20"),  mdy("2-1-20"),  mdy("2-16-20"), mdy("3-11-20"),  mdy("3-22-20"))
+end_dates =   c(mdy("1-31-20"), mdy("2-15-20"), mdy("3-10-20"), mdy("3-21-20"), mdy("5-1-20"))
+
 
 # User creates the time_windows object here
-tw <- time_windows(r0 = input_R0,
-                   dist_param = input_dist_param,
+tw <- time_windows(beta = input_beta,
+                   dist_phi = input_dist_phi,
                    m = input_m,
                    imm_frac = input_imm_frac,
-                   window_length = input_window_length)
+                   start_dates = start_dates,
+                   end_dates = end_dates)
 
 # Randomly generate initial conditions for
 # EXPOSED class:
@@ -150,29 +157,11 @@ for(i in 1:n_initial_E){
 # Inputs for the models
 N_pops <- as.integer(dat_list[["pop_N"]])
 S_pops <- N_pops - E_pops
-I_pops <- vector("integer", length = n_pop)
-R_pops <- vector("integer", length = n_pop)
-I_asym_pops <- vector("integer", length = n_pop)
-I_presym_pops <- vector("integer", length = n_pop)
-I_sym_pops <- vector("integer", length = n_pop)
-I_home_pops <- vector("integer", length = n_pop)
-I_hosp_pops <- vector("integer", length = n_pop)
-I_icu1_pops <- vector("integer", length = n_pop)
-I_icu2_pops <- vector("integer", length = n_pop)
-D_pops <- vector("integer", length = n_pop)
 
 # User created control list of parameters
 covid19_control <- covid19_control(input_N_pops = N_pops,
-                                   input_E_pops = E_pops,
-                                   input_I_asym_pops=I_asym_pops,
-                                   input_I_presym_pops=I_presym_pops,
-                                   input_I_sym_pops=I_sym_pops,
-                                   input_I_home_pops=I_home_pops,
-                                   input_I_hosp_pops=I_hosp_pops,
-                                   input_I_icu1_pops=I_icu1_pops,
-                                   input_I_icu2_pops=I_icu2_pops,
-                                   input_R_pops=R_pops,
-                                   input_D_pops=D_pops)
+                                   input_S_pops = S_pops,
+                                   input_E_pops = E_pops)
 
 arg.list <- list(
     input_dist_mat =    dat_list$dist_vec,

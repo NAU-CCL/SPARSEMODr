@@ -1,7 +1,7 @@
 ---
 title: "SPARSE-MOD COVID-19 Model"
 author: "JR Mihaljevic"
-date: "December 2020"
+date: "July 2022"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{SPARSE-MOD COVID-19 Model: Time-varying hospitalization}
@@ -45,7 +45,6 @@ n_pop = 100
 
 # Population sizes + areas
 ## Draw from neg binom:
-pop_N = rnbinom(n_pop, mu = 50000, size = 3)
 census_area = rnbinom(n_pop, mu = 50, size = 3)
 
 # Identification variable for later
@@ -55,26 +54,49 @@ pop_ID = c(1:n_pop)
 lat_temp = runif(n_pop, 32, 37)
 long_temp = runif(n_pop, -114, -109)
 
+# Storage:
+region = rep(NA, n_pop)
+pop_N = rep(NA, n_pop)
+
+# Assign region ID and population size
+for(i in 1 : n_pop){
+  if ((lat_temp[i] >= 34.5) & (long_temp[i] <= -111.5)){
+    region[i] = "1"
+    pop_N[i] = rnbinom(1, mu = 50000, size = 2)
+  } else if((lat_temp[i] >= 34.5) & (long_temp[i] > -111.5)){
+    region[i] = "2"
+    pop_N[i] = rnbinom(1, mu = 10000, size = 3)
+  } else if((lat_temp[i] < 34.5) & (long_temp[i] > -111.5)){
+    region[i] = "4"
+    pop_N[i] = rnbinom(1, mu = 50000, size = 2)
+  } else if((lat_temp[i] < 34.5) & (long_temp[i] <= -111.5)){
+    region[i] = "3"
+    pop_N[i] = rnbinom(1, mu = 10000, size = 3)
+  } 
+}
+
 pop_local_df =
   data.frame(pop_ID = pop_ID,
              pop_N = pop_N,
              census_area,
              lat = lat_temp,
-             long = long_temp) %>%
-  # Assign regions by quadrant
-  ## Used later for aggregation
-  mutate(region = case_when(
-    lat >= 34.5 & long <= -111.5 ~ "1",
-    lat >= 34.5 & long >  -111.5 ~ "2",
-    lat <  34.5 & long >  -111.5 ~ "3",
-    lat <  34.5 & long <= -111.5 ~ "4"
-  ))
+             long = long_temp,
+             region = region) 
 
 # Plot the map:
-ggplot(pop_local_df) +
-  geom_point(aes(x = long, y = lat, color = region),
-             shape = 19) +
-  scale_color_viridis_d(direction = -1) +
+pop_plot = ggplot(pop_local_df) +
+  geom_point(aes(x = long, y = lat, 
+                 fill = region, size = pop_N),
+             shape = 21) +
+  scale_size(name = "Pop. Size", range = c(1,5), 
+             breaks = c(5000, 50000, 150000)) +
+  scale_fill_manual(name = "Region", values = c("#00AFBB", "#D16103",
+                                                "#E69F00", "#4E84C4")) +
+  geom_hline(yintercept = 34.5, colour = "#999999", linetype = 2) +
+  geom_vline(xintercept = -111.5, colour = "#999999", linetype = 2) +
+  guides(size = guide_legend(order = 2), 
+         fill = guide_legend(order = 1, 
+                             override.aes = list(size = 3))) +
   # Map coord
   coord_quickmap() +
   theme_classic() +
@@ -83,6 +105,8 @@ ggplot(pop_local_df) +
     axis.title = element_blank(),
     plot.margin = unit(c(0, 0.1, 0, 0), "cm")
   )
+
+pop_plot
 
 # Calculate pairwise dist
 ## in meters so divide by 1000 for km
@@ -110,7 +134,7 @@ pop_local_df$E_pops = E_pops
 
 ### Setting up the time-windows
 
-One of the benefits of the SPARSEMODr design is that the user can specify how certain parameters of the model change over time (see [our vignette on key features of SPARSEMODr](key-features.html) for more details). We demonstrate this below. In this particular example, we allow the time-varying R0 to change in a step-wise fashion due to 'interventions', but we assume host migration dynamics are static. We futher allow the hospitalization rates to change over time, again step-wise. Note that when the parameter values change between two time windows, the model assumes a linear change over the number of days in that window. In other words, the user specifies the value of the parameter achieved on the *last day* of the time window.
+One of the benefits of the SPARSEMODr design is that the user can specify how certain parameters of the model change over time (see [our vignette on key features of SPARSEMODr](key-features.html) for more details). In this particular example, we allow the time-varying transmission rate to change in a step-wise fashion, due for instance to changing behaviors in the host population. We further allow the hospitalization rates to change over time, again step-wise. Note that when the parameter values change between two time windows, the model assumes a linear change over the number of days in that window. In other words, the user specifies the value of the parameter achieved on the *last day* of the time window. Of course, the user could specify daily values for these parameter values to gain more control (see [our vignette on the SPARSEMOD SEIR model](seir-model.html) for more details).
 
 We'll use the $\texttt{time_windows()}$ function to generate patterns of time-varying R0 and hospitalization rates, but here we show how it works behind the scenes (manually):
 
@@ -124,46 +148,46 @@ end_dates =   c(mdy("1-31-20"), mdy("2-15-20"), mdy("3-10-20"), mdy("3-21-20"), 
 # Date sequence
 date_seq = seq.Date(start_dates[1], end_dates[n_windows], by = "1 day")
 
-# Time-varying R0 and hospitalization rate
+# Time-varying beta and hospitalization rate
 # Note that these are not necessarily realistic hospitalization rates!
-changing_r0 = c(3.0,            0.8,            0.8,            1.4,            1.4)
-changing_hr = c(0.5,            0.3,            0.3,            0.1,            0.1)
+changing_beta = c(0.3,            0.1,            0.1,           0.15,           0.15)
+changing_hr   = c(0.5,            0.3,            0.3,            0.1,            0.1)
 
-#R0 sequence
-r0_seq = NULL
+#beta sequence
+beta_seq = NULL
 hr_seq = NULL
 
-r0_seq[1:(yday(end_dates[1]) - yday(start_dates[1]) + 1)] =
-  changing_r0[1]
+beta_seq[1:(yday(end_dates[1]) - yday(start_dates[1]) + 1)] =
+  changing_beta[1]
 
 hr_seq[1:(yday(end_dates[1]) - yday(start_dates[1]) + 1)] =
   changing_hr[1]
 
 for(i in 2:n_windows){
 
-  r0_temp_seq = NULL
-  r0_temp = NULL
+  beta_temp_seq = NULL
+  beta_temp = NULL
 
   hr_temp_seq = NULL
   hr_temp = NULL
 
-  # R0 time steps...
-  if(changing_r0[i] != changing_r0[i-1]){
+  # beta time steps...
+  if(changing_beta[i] != changing_beta[i-1]){
 
-    r0_diff = changing_r0[i-1] - changing_r0[i]
+    beta_diff = changing_beta[i-1] - changing_beta[i]
     n_days = yday(end_dates[i]) - yday(start_dates[i]) + 1
-    r0_slope = - r0_diff / n_days
+    beta_slope = - beta_diff / n_days
 
     for(j in 1:n_days){
-      r0_temp_seq[j] = changing_r0[i-1] + r0_slope*j
+      beta_temp_seq[j] = changing_beta[i-1] + beta_slope*j
     }
 
   }else{
     n_days = yday(end_dates[i]) - yday(start_dates[i]) + 1
-    r0_temp_seq = rep(changing_r0[i], times = n_days)
+    beta_temp_seq = rep(changing_beta[i], times = n_days)
   }
 
-  r0_seq = c(r0_seq, r0_temp_seq)
+  beta_seq = c(beta_seq, beta_temp_seq)
 
   # Hosp rate time steps...
   if(changing_hr[i] != changing_hr[i-1]){
@@ -185,16 +209,16 @@ for(i in 2:n_windows){
 
 }
 
-r0_seq_df = data.frame(r0_seq, date_seq)
+beta_seq_df = data.frame(beta_seq, date_seq)
 date_breaks = seq(range(date_seq)[1],
                   range(date_seq)[2],
                   by = "1 month")
 
 
-ggplot(r0_seq_df) +
-  geom_path(aes(x = date_seq, y = r0_seq)) +
+ggplot(beta_seq_df) +
+  geom_path(aes(x = date_seq, y = beta_seq)) +
   scale_x_date(breaks = date_breaks, date_labels = "%b") +
-  labs(x="", y="Time-varying R0") +
+  labs(x="", y=expression("Time-varying "*beta*", ("*beta[t]*")")) +
   # THEME
   theme_classic()+
   theme(
@@ -230,12 +254,12 @@ ggplot(hr_seq_df) +
 ###   TIME-VARYING PARAMETERS   ###
 ###  Now need a daily sequence  ###
 
-n_days = length(r0_seq)
+n_days = length(beta_seq)
 
 # Migration rate
 changing_m = rep(1/10.0, times = n_days)
 # Migration range
-changing_dist_param = rep(150, times = n_days)
+changing_dist_phi = rep(150, times = n_days)
 # Immigration (none)
 changing_imm_frac = rep(0, times = n_days)
 
@@ -244,9 +268,9 @@ date_seq = seq.Date(start_dates[1], end_dates[n_windows], by = "1 day")
 
 # Create the time_window() object
 tw = time_windows(
-  r0 = r0_seq,
+  beta = beta_seq,
   m = changing_m,
-  dist_param = changing_dist_param,
+  dist_phi = changing_dist_phi,
   imm_frac = changing_imm_frac,
   hosp_rate = hr_seq,
 
@@ -265,7 +289,7 @@ covid19_control <- covid19_control(input_N_pops = pop_N,
 
 Now we have all of the input elements needed to run SPARSEMODr's COVID-19 model. Below we demonstrate a workflow to generate stochastic realizations of the model in parallel.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # How many realizations of the model?
 n_realz = 75
 
@@ -369,22 +393,22 @@ plot_new_hosp_base =
       # New Hosp Range:
       scale_y_continuous(limits = c(0, max_hosp*1.05)),
       # BOXES AND TEXT TO LABEL TIME WINDOWS
-      ## R0 = 3.0
-      annotate("text", label = paste0("R0 = ", format(changing_r0[1], nsmall = 1)),
+      ## beta = 3.0
+      annotate("text", label = paste0("beta = ", format(changing_beta[1], nsmall = 1)),
                color = "#39558CFF", hjust = 0, vjust = 1, size = 3.0,
                x = start_dates[1], y = max_hosp*1.05),
       annotate("rect", xmin = start_dates[1], xmax = end_dates[1],
                ymin = 0, ymax = max_hosp*1.05,
                fill = "gray", alpha = 0.2),
-      ## R0 = 0.8
-      annotate("text", label = paste0("R0 = ", changing_r0[3]),
+      ## beta = 0.8
+      annotate("text", label = paste0("beta = ", changing_beta[3]),
                color = "#39558CFF", hjust = 0, vjust = 1, size = 3.0,
                x = start_dates[3], y = max_hosp*1.05),
       annotate("rect", xmin = start_dates[3], xmax = end_dates[3],
                ymin = 0, ymax = max_hosp*1.05,
                fill = "gray", alpha = 0.2),
-      ## R0 = 1.4
-      annotate("text", label = paste0("R0 = ", changing_r0[5]),
+      ## beta = 1.4
+      annotate("text", label = paste0("beta = ", changing_beta[5]),
                color = "#39558CFF", hjust = 0, vjust = 1, size = 3.0,
                x = start_dates[5], y = max_hosp*1.05),
       annotate("rect", xmin = start_dates[5], xmax = end_dates[5],
@@ -426,12 +450,16 @@ plot_new_hosp =
   plot_new_hosp_base +
   # Add the stoch trajectories:
   geom_path(data = new_event_sum_df,
-            aes(x = date, y = new_hosp, group = iter),
-            alpha = 0.05, color = "black") +
+            aes(x = date, y = new_hosp, group = iter, color = region),
+            alpha = 0.05) +
   # Add the median trajectory:
   geom_path(data = new_event_median_df,
-            aes(x = date, y = med_new_hosp),
-            size = 2, color = "black")
+            aes(x = date, y = med_new_hosp, color = region),
+            size = 2) +
+  # Colors per region:
+  scale_color_manual(values = c("#00AFBB", "#D16103", 
+                                "#E69F00", "#4E84C4")) +
+  guides(color="none")
 
 plot_new_hosp
 

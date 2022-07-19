@@ -76,7 +76,8 @@ N_pops <- S_pops + E_pops + I_pops + R_pops
 
 ## Example using the default parameters:
 seir_control <- seir_control(input_S_pops = S_pops,
-                             input_E_pops = E_pops)
+                             input_E_pops = E_pops,
+                             input_I_pops = I_pops)
 
 ## Example specifying one optional parameter:
 seir_control <- seir_control(input_N_pops = N_pops,

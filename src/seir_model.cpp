@@ -52,12 +52,12 @@ int seir_model (
     gsl_rng *rand1 = gsl_rng_alloc(T1);
     //*****************************************
 
-    double r0 = 0, r0_slope = 0, r0_intercept = 0;
+    double beta_temp = 0, beta_slope = 0, beta_intercept = 0;
     double m_slope = 0, m_intercept = 0;
-    double dist_param = 0, dist_param_low = 0, dist_param_slope = 0;
-    double dist_param_intercept = 0;
+    double dist_phi = 0, dist_phi_low = 0, dist_phi_slope = 0;
+    double dist_phi_intercept = 0;
     double imm_frac_slope = 0, imm_frac_intercept = 0;
-    bool dist_param_changed = false;
+    bool dist_phi_changed = false;
     bool daily_mode_on = false;
 
     // Create a map for the beta values to avoid repeated calcuations. <unordered_map> is used because it is faster than the regular map.
@@ -67,8 +67,8 @@ int seir_model (
     TimeWindow *head_node, *current_node = NULL;
     head_node = importTimeWindowData(params->n_pop,
                                      params->total_windows,
-                                     params->input_r0,
-                                     params->input_dist_param,
+                                     params->input_beta,
+                                     params->input_dist_phi,
                                      params->input_m,
                                      params->input_imm_frac,
                                      NULL,  // input_hosp_rate
@@ -112,7 +112,7 @@ int seir_model (
     beta = nrutil_dvector(1, n_pop);
 
     // compute prob_ColSum and prob_move based on dist_mat and
-    // dist_param_low.
+    // dist_phi_low.
     for(int i = 1; i <= n_pop; i++){
         pop_N[i] = params->input_N_pops[i-1];//TODO remove pop_N/census_area, just use input_*
         census_area[i] = params->input_census_area[i-1];
@@ -123,7 +123,7 @@ int seir_model (
             prob_move[i][j] = 0;
 
             if(i != j){
-                prob_move[i][j] = 1 / exp(dist_mat[i][j] / dist_param_low);
+                prob_move[i][j] = 1 / exp(dist_mat[i][j] / dist_phi_low);
             }
 
             prob_ColSum[j] = prob_ColSum[j] + prob_move[i][j];
@@ -263,18 +263,18 @@ int seir_model (
                     current_node->window_length = n_times - t;
                 }
 
-                if (dist_param != current_node->dist_param)
+                if (dist_phi != current_node->dist_phi)
                 {
-                    dist_param_changed = true;
+                    dist_phi_changed = true;
 
-                    // dist_param
-                    dist_param_low = current_node->getMinDistParam();
-                    dist_param_slope = current_node->getDistParamSlope();
-                    dist_param_intercept = current_node->getDistParamIntercept(t - 1);
+                    // dist_phi
+                    dist_phi_low = current_node->getMinDistParam();
+                    dist_phi_slope = current_node->getDistParamSlope();
+                    dist_phi_intercept = current_node->getDistParamIntercept(t - 1);
                 }
                 else
                 {
-                    dist_param_changed = false;
+                    dist_phi_changed = false;
                 }
 
                 // m
@@ -293,43 +293,43 @@ int seir_model (
             {
                 params->m = current_node->m;
                 params->imm_frac = current_node->imm_frac;
-                dist_param = current_node->dist_param;
+                dist_phi = current_node->dist_phi;
             }
             else
             {
                 params->m = m_slope * t + m_intercept;
                 params->imm_frac = imm_frac_slope * t + imm_frac_intercept;
-                dist_param = dist_param_slope * t + dist_param_intercept;
+                dist_phi = dist_phi_slope * t + dist_phi_intercept;
             }
 
             // Calculate beta values for each population
             for (int this_pop = 1; this_pop <= n_pop; this_pop++) {
                 if (daily_mode_on) {
-                    r0 = current_node->r0[this_pop-1];
-
-                    // Avoid calculateBeta if beta was already calculated for this R0
-                    std::unordered_map<double, double>::const_iterator beta_iter = beta_map.find(r0);
-                    if (beta_iter != beta_map.end()) {
-                        beta[this_pop] = beta_iter->second;
-                    }
-                    else {
-                        beta[this_pop] = calculateBeta(r0, params);
-                        beta_map.insert(std::pair<double, double>(r0, beta[this_pop]));
-                    }
+                    beta_temp = current_node->beta[this_pop-1];
+// 
+//                     // Avoid calculateBeta if beta was already calculated for this R0
+//                     std::unordered_map<double, double>::const_iterator beta_iter = beta_map.find(r0);
+//                     if (beta_iter != beta_map.end()) {
+//                         beta[this_pop] = beta_iter->second;
+//                     }
+//                     else {
+                        beta[this_pop] = beta_temp; //calculateBeta(r0, params);
+                        // beta_map.insert(std::pair<double, double>(r0, beta[this_pop]));
+                    // }
                 }
                 else {
                     // Min/max for R0
-                    r0_slope = current_node->getR0Slope(this_pop-1);
-                    r0_intercept = current_node->getR0Intercept(this_pop-1, t - 1);
-                    r0 = r0_slope * t + r0_intercept;
+                    beta_slope = current_node->getbetaSlope(this_pop-1);
+                    beta_intercept = current_node->getbetaIntercept(this_pop-1, t - 1);
+                    beta_temp = beta_slope * t + beta_intercept;
 
-                    beta[this_pop] = calculateBeta(r0, params);
+                    beta[this_pop] = beta_temp; //calculateBeta(r0, params);
                 }
             }
             params->beta = beta;
 
-            // Only deal with prob_move if dist_param changes
-            if (dist_param_changed)
+            // Only deal with prob_move if dist_phi changes
+            if (dist_phi_changed)
             {
                 for(int k = 1; k <= n_pop; k++){
                     // prob_ColSum[k] = 0.0;
@@ -338,7 +338,7 @@ int seir_model (
                         prob_move[k][j] = 0.0;
 
                         if(k != j){
-                            prob_move[k][j] = 1 / exp(dist_mat[k][j] / dist_param);
+                            prob_move[k][j] = 1 / exp(dist_mat[k][j] / dist_phi);
                         }
                         // prob_ColSum[j] = prob_ColSum[j] + prob_move[k][j];
                     }
@@ -927,15 +927,15 @@ void update_pop_migrants(int *update_vec_migrants, int this_pop,
  *
  * Used by GSL root solver in calculateBeta.
  */
-double beta_calc (double beta, void *params)
-{
-    double result;
-    struct beta_calc_struct *p = (struct beta_calc_struct *)params;
-
-    result = beta / (p->Params->birth + p->Params->recov) - p->r0;
-
-    return result;
-}
+// double beta_calc (double beta, void *params)
+// {
+//     double result;
+//     struct beta_calc_struct *p = (struct beta_calc_struct *)params;
+// 
+//     result = beta / (p->Params->birth + p->Params->recov) - p->r0;
+// 
+//     return result;
+// }
 
 
 /*
@@ -943,74 +943,74 @@ double beta_calc (double beta, void *params)
  *
  * Calculates beta based on R0 value.
  */
-double calculateBeta(float r0, SEIRParamStruct *Params)
-{
-    int status;
-    int iteration = 0;
-    int max_iter = MAX_BRENT_ITERATIONS;
-
-    double root = 0;
-    double root_low = BETA_LOWER_LIMIT;
-    double root_high = BETA_UPPER_LIMIT;
-
-    const gsl_root_fsolver_type *root_fsolver_type;
-    root_fsolver_type = gsl_root_fsolver_brent;
-
-    gsl_root_fsolver *s;
-    s = gsl_root_fsolver_alloc(root_fsolver_type);
-
-    struct beta_calc_struct params = {r0, Params};
-
-    gsl_function F;
-    F.function = &beta_calc;
-    F.params = &params;
-
-    gsl_root_fsolver_set (s, &F, root_low, root_high);
-
-    // For debugging output in console, set the constant to 1 at the top of this file.
-    if (OUTPUT_DEBUG_ON == 1)
-    {
-        printf ("using %s method\n", gsl_root_fsolver_name (s));
-
-        printf ("%5s [%9s, %9s] %9s %9s\n",
-                "iter", "lower", "upper", "root",
-                "err(est)");
-    }
-
-    /*
-     * Use GSL root solver to find the root. Number of iterations to try and
-     * the upper and lower bounds for beta are set as constants at the top
-     * of this file.
-     */
-    do
-    {
-        iteration++;
-        status = gsl_root_fsolver_iterate (s);
-        root = gsl_root_fsolver_root(s);
-        root_low = gsl_root_fsolver_x_lower(s);
-        root_high = gsl_root_fsolver_x_upper(s);
-        status = gsl_root_test_interval(root_low, root_high, 0, 0.001);
-
-        // For debugging output in console, set the constant to 1 at the top of this file.
-        if (OUTPUT_DEBUG_ON == 1)
-        {
-            if (status == GSL_SUCCESS) printf ("Converged:\n");
-
-            printf ("%5d [%.7f, %.7f] %.7f %.7f\n",
-                    iteration, root_low, root_high,
-                    root ,
-                    root_high - root_low);
-        }
-    }
-    while (status == GSL_CONTINUE && iteration < max_iter);
-
-    // For debugging output in console, set the constant to 1 at the top of this file.
-    if (OUTPUT_DEBUG_ON == 1)
-    {
-        printf("\tDEBUG: beta = %.4f for R0 = %.1f\n\n", root, r0);
-    }
-
-    gsl_root_fsolver_free(s);
-
-    return root;
-}
+// double calculateBeta(float r0, SEIRParamStruct *Params)
+// {
+//     int status;
+//     int iteration = 0;
+//     int max_iter = MAX_BRENT_ITERATIONS;
+// 
+//     double root = 0;
+//     double root_low = BETA_LOWER_LIMIT;
+//     double root_high = BETA_UPPER_LIMIT;
+// 
+//     const gsl_root_fsolver_type *root_fsolver_type;
+//     root_fsolver_type = gsl_root_fsolver_brent;
+// 
+//     gsl_root_fsolver *s;
+//     s = gsl_root_fsolver_alloc(root_fsolver_type);
+// 
+//     struct beta_calc_struct params = {r0, Params};
+// 
+//     gsl_function F;
+//     F.function = &beta_calc;
+//     F.params = &params;
+// 
+//     gsl_root_fsolver_set (s, &F, root_low, root_high);
+// 
+//     // For debugging output in console, set the constant to 1 at the top of this file.
+//     if (OUTPUT_DEBUG_ON == 1)
+//     {
+//         printf ("using %s method\n", gsl_root_fsolver_name (s));
+// 
+//         printf ("%5s [%9s, %9s] %9s %9s\n",
+//                 "iter", "lower", "upper", "root",
+//                 "err(est)");
+//     }
+// 
+//     /*
+//      * Use GSL root solver to find the root. Number of iterations to try and
+//      * the upper and lower bounds for beta are set as constants at the top
+//      * of this file.
+//      */
+//     do
+//     {
+//         iteration++;
+//         status = gsl_root_fsolver_iterate (s);
+//         root = gsl_root_fsolver_root(s);
+//         root_low = gsl_root_fsolver_x_lower(s);
+//         root_high = gsl_root_fsolver_x_upper(s);
+//         status = gsl_root_test_interval(root_low, root_high, 0, 0.001);
+// 
+//         // For debugging output in console, set the constant to 1 at the top of this file.
+//         if (OUTPUT_DEBUG_ON == 1)
+//         {
+//             if (status == GSL_SUCCESS) printf ("Converged:\n");
+// 
+//             printf ("%5d [%.7f, %.7f] %.7f %.7f\n",
+//                     iteration, root_low, root_high,
+//                     root ,
+//                     root_high - root_low);
+//         }
+//     }
+//     while (status == GSL_CONTINUE && iteration < max_iter);
+// 
+//     // For debugging output in console, set the constant to 1 at the top of this file.
+//     if (OUTPUT_DEBUG_ON == 1)
+//     {
+//         printf("\tDEBUG: beta = %.4f for R0 = %.1f\n\n", root, r0);
+//     }
+// 
+//     gsl_root_fsolver_free(s);
+// 
+//     return root;
+// }

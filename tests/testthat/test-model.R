@@ -17,22 +17,16 @@ n_pop <- length(dat_list[["pop_N"]])
 realz_seeds <- 1:2
 n_realz <- length(realz_seeds)
 
-# # Set up R0 for different populations
-# input_r0 <- list()
-# for (this_pop in 1:n_pop) {
-#     input_r0[[this_pop]] <- c(2.0, 2.0, 0.8, 0.8, 1.5)
-# }
-
 # Data for testing
-input_r0 <-             c(   2.0,   2.0,   0.8,   0.8,   1.5)
-input_dist_param <-     c(   200,   200,    20,   150,   150)
+input_beta <-           c(   0.3,   0.3,  0.08,  0.08,  0.15)
+input_dist_phi <-       c(   200,   200,    20,   150,   150)
 input_m <-              c( 0.002, 0.002, 0.002,  0.02,  0.02)
 input_imm_frac <-       c(  0.02,  0.02,  0.02,  0.02,  0.02)
 input_window_length <-  c(     0,    36,    10,    35,   169)
 
 # User creates the time_windows object here
-tw <- time_windows(r0 = input_r0,
-                   dist_param = input_dist_param,
+tw <- time_windows(beta = input_beta,
+                   dist_phi = input_dist_phi,
                    m = input_m,
                    imm_frac = input_imm_frac,
                    window_length = input_window_length)

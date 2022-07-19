@@ -1,6 +1,6 @@
 Package: SPARSEMODr
 Title: SPAtial Resolution-SEnsitive Models of Outbreak Dynamics
-Version: 1.1.0
+Version: 1.2.0
 URL: https://github.com/NAU-CCL/SPARSEMODr
 BugReports: https://github.com/NAU-CCL/SPARSEMODr/issues
 Authors@R: c(
@@ -27,3 +27,4 @@ Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 LinkingTo: Rcpp
 Depends: R (>= 3.5.0)
+SystemRequirements: GNU GSL (>= 2.7)

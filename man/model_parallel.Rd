@@ -3,13 +3,13 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 
-Parallelized implementation of the SPARSE-MOD COVID-19 Model
+Parallelized implementation of the SPARSE-MOD models
 
 }
 
 \description{
 
-    The function uses \code{R}-level parallelization to speed up the generation of stochastic realizations of the SPARSEMODr COVID-19 model and to combine output data into a read-to-use data frame. This is the preferred method to run \code{\link{model_interface}}.
+    The function uses \code{R}-level parallelization to speed up the generation of stochastic realizations of the SPARSEMODr models and to combine output data into a read-to-use data frame. This is the preferred method to run \code{\link{model_interface}}.
 
 }
 
@@ -51,6 +51,9 @@ Parallelized implementation of the SPARSE-MOD COVID-19 Model
 
 
 ##########################################
+# Required for run:
+require(lubridate)
+
 ## Using supplied example data:
 
 # Read in the example data:
@@ -67,18 +70,22 @@ n_realz <- length(realz_seeds)
 future::plan("multisession")
 
 # Set up time windows (see time_windows for other ways to do this)
-input_R0 <-             c(   2.0,   2.0,   0.8,   0.8,   1.5)
-input_dist_param <-     c(   200,   200,    20,   150,   150)
+input_beta <-           c(   0.3,   0.3,  0.08,  0.08,  0.15)
+input_dist_phi <-     c(   200,   200,    20,   150,   150)
 input_m <-              c( 0.002, 0.002, 0.002,  0.02,  0.02)
 input_imm_frac <-       c(   0.0,   0.0,   0.0,  0.02,  0.02)
-input_window_length <-  c(     0,    36,    10,    35,   169)
+# Window intervals
+start_dates = c(mdy("1-1-20"),  mdy("2-1-20"),  mdy("2-16-20"), mdy("3-11-20"),  mdy("3-22-20"))
+end_dates =   c(mdy("1-31-20"), mdy("2-15-20"), mdy("3-10-20"), mdy("3-21-20"), mdy("5-1-20"))
+
 
 # User creates the time_windows object here
-tw <- time_windows(r0 = input_R0,
-                   dist_param = input_dist_param,
+tw <- time_windows(beta = input_beta,
+                   dist_phi = input_dist_phi,
                    m = input_m,
                    imm_frac = input_imm_frac,
-                   window_length = input_window_length)
+                   start_dates = start_dates,
+                   end_dates = end_dates)
 
 # Randomly generate initial conditions for
 # EXPOSED class:
@@ -93,19 +100,8 @@ for(i in 1:n_initial_E){
   E_pops[these_E[i]] <- E_pops[these_E[i]] + 1
 }
 
-# Inputs for the models
+# Population sizes
 N_pops <- as.integer(dat_list[["pop_N"]])
-S_pops <- N_pops - E_pops
-I_pops <- vector("integer", length = n_pop)
-R_pops <- vector("integer", length = n_pop)
-I_asym_pops <- vector("integer", length = n_pop)
-I_presym_pops <- vector("integer", length = n_pop)
-I_sym_pops <- vector("integer", length = n_pop)
-I_home_pops <- vector("integer", length = n_pop)
-I_hosp_pops <- vector("integer", length = n_pop)
-I_icu1_pops <- vector("integer", length = n_pop)
-I_icu2_pops <- vector("integer", length = n_pop)
-D_pops <- vector("integer", length = n_pop)
 
 # Set up a function to use the dat_list
 
@@ -122,16 +118,7 @@ get_result <- function(input_realz_seeds, control = NULL){
 
 # User creates control list of parameters
 covid19_control <- covid19_control(input_N_pops = N_pops,
-                                   input_E_pops = E_pops,
-                                   input_I_asym_pops=I_asym_pops,
-                                   input_I_presym_pops=I_presym_pops,
-                                   input_I_sym_pops=I_sym_pops,
-                                   input_I_home_pops=I_home_pops,
-                                   input_I_hosp_pops=I_hosp_pops,
-                                   input_I_icu1_pops=I_icu1_pops,
-                                   input_I_icu2_pops=I_icu2_pops,
-                                   input_R_pops=R_pops,
-                                   input_D_pops=D_pops)
+                                   input_E_pops = E_pops)
 
 covid_model_output <-
     get_result(

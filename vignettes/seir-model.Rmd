@@ -1,7 +1,7 @@
 ---
 title: "SPARSE-MOD SEIR Model"
 author: "JR Mihaljevic"
-date: "December 2020"
+date: "July 2022"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{SPARSE-MOD SEIR Model}
@@ -39,24 +39,23 @@ Here we present a walk-through of using the SPARSE-MOD SEIR Model. SEIR stands f
 \end{align}
 
 In this classical model, Susceptible individuals become exposed to the pathogen, moving to the Exposed class. There is a period of latency or incubation ($1/\delta$) before the hosts become Infectious. Infectious hosts can then recover from the pathogen at an average rate of $1/\gamma$, in which case we assume the Recovered individuals are immune to the pathogen for life. The model includes host demography, in which we assume that birth rate is equal to death rate which is equal to $\mu$. This ensures that the local population size remains constant through time (not accounting for temporary migration events in the SPARSEMODr framework).^[See [our vignette on key features of SPARSEMODr, including migration dynamics](key-features.html) for more general details of the SPARSEMODr package.]
-The model also assumes that all host classes contribute to reproduction and that offspring are fully susceptible. Finally, the model assumes that mortaltity is natural and not pathogen-induced. In other words, the pathogen is not meaningfully virulent in terms of host life-expectancy. This model has been typically used for childhood diseases that confer life-long immunity. Note thta we also use the notation $\hat{\beta}$ to emphasize that the transmission rate can be modeled as frequency- or density-dependent.^[See [our vignette on key features of SPARSEMODr, including migration dynamics](key-features.html) for more general details of the SPARSEMODr package.]
+The model also assumes that all host classes contribute to reproduction and that offspring are fully susceptible. Finally, the model assumes that mortality is natural and not pathogen-induced. In other words, the pathogen is not meaningfully virulent in terms of host life-expectancy. This model has been typically used for childhood diseases that confer life-long immunity. Note that we also use the notation $\hat{\beta}$ to emphasize that the transmission rate can be modeled as frequency- or density-dependent.^[See [our vignette on key features of SPARSEMODr, including migration dynamics](key-features.html) for more general details of the SPARSEMODr package.]
 
 **In this example, we will demonstrate how we can use the time-windows feature to implement seasonality in transmission rates that can generate sustained oscillations in pathogen prevalence in this SEIR model with host demography.**  
 
 ### Generating a synthetic meta-population
 
-First, we will generate some data that describes the meta-population^[A set of distinct, focal populations that are connected by migration] of interest. Note that this is essentially the same set-up as compared to [the SPARSEMODr COVID-19 model vignette](covid-19-model.html).
+First, we will generate some data that describes the meta-population^[A set of distinct, focal populations that are connected by migration] of interest. Note that this is the same set-up as [the SPARSEMODr COVID-19 model vignette](covid-19-model.html).
 
 ```{r, fig.show='hold'}
 # Set seed for reproducibility
-set.seed(2)
+set.seed(5)
 
 # Number of focal populations:
-n_pop = 15
+n_pop = 100
 
 # Population sizes + areas
 ## Draw from neg binom:
-pop_N = rnbinom(n_pop, mu = 50000, size = 1)
 census_area = rnbinom(n_pop, mu = 50, size = 3)
 
 # Identification variable for later
@@ -66,26 +65,49 @@ pop_ID = c(1:n_pop)
 lat_temp = runif(n_pop, 32, 37)
 long_temp = runif(n_pop, -114, -109)
 
+# Storage:
+region = rep(NA, n_pop)
+pop_N = rep(NA, n_pop)
+
+# Assign region ID and population size
+for(i in 1 : n_pop){
+  if ((lat_temp[i] >= 34.5) & (long_temp[i] <= -111.5)){
+    region[i] = "1"
+    pop_N[i] = rnbinom(1, mu = 50000, size = 2)
+  } else if((lat_temp[i] >= 34.5) & (long_temp[i] > -111.5)){
+    region[i] = "2"
+    pop_N[i] = rnbinom(1, mu = 10000, size = 3)
+  } else if((lat_temp[i] < 34.5) & (long_temp[i] > -111.5)){
+    region[i] = "4"
+    pop_N[i] = rnbinom(1, mu = 50000, size = 2)
+  } else if((lat_temp[i] < 34.5) & (long_temp[i] <= -111.5)){
+    region[i] = "3"
+    pop_N[i] = rnbinom(1, mu = 10000, size = 3)
+  } 
+}
+
 pop_local_df =
   data.frame(pop_ID = pop_ID,
              pop_N = pop_N,
              census_area,
              lat = lat_temp,
-             long = long_temp) %>%
-  # Assign regions by quadrant
-  ## Used later for aggregation
-  mutate(region = case_when(
-    lat >= 34.5 & long <= -111.5 ~ "1",
-    lat >= 34.5 & long >  -111.5 ~ "2",
-    lat <  34.5 & long >  -111.5 ~ "3",
-    lat <  34.5 & long <= -111.5 ~ "4"
-  ))
+             long = long_temp,
+             region = region) 
 
 # Plot the map:
-ggplot(pop_local_df) +
-  geom_point(aes(x = long, y = lat, color = region),
-             shape = 19) +
-  scale_color_viridis_d(direction = -1) +
+pop_plot = ggplot(pop_local_df) +
+  geom_point(aes(x = long, y = lat, 
+                 fill = region, size = pop_N),
+             shape = 21) +
+  scale_size(name = "Pop. Size", range = c(1,5), 
+             breaks = c(5000, 50000, 150000)) +
+  scale_fill_manual(name = "Region", values = c("#00AFBB", "#D16103",
+                                                "#E69F00", "#4E84C4")) +
+  geom_hline(yintercept = 34.5, colour = "#999999", linetype = 2) +
+  geom_vline(xintercept = -111.5, colour = "#999999", linetype = 2) +
+  guides(size = guide_legend(order = 2), 
+         fill = guide_legend(order = 1, 
+                             override.aes = list(size = 3))) +
   # Map coord
   coord_quickmap() +
   theme_classic() +
@@ -94,6 +116,8 @@ ggplot(pop_local_df) +
     axis.title = element_blank(),
     plot.margin = unit(c(0, 0.1, 0, 0), "cm")
   )
+
+pop_plot
 
 # Calculate pairwise dist
 ## in meters so divide by 1000 for km
@@ -105,7 +129,7 @@ hist(dist_mat, xlab = "Distance (km)", main = "")
 E_pops = vector("numeric", length = n_pop)
 # We'll assume a total number of exposed across the
 # full meta-community, and then randomly distribute these hosts
-n_initial_E = 10
+n_initial_E = 20
 # (more exposed in larger populations)
 these_E <- sample.int(n_pop,
                       size = n_initial_E,
@@ -121,11 +145,11 @@ pop_local_df$E_pops = E_pops
 
 ### Setting up the $\texttt{time_windows}$ object
 
-One of the benefits of the SPARSEMODr design is that the user can specify how certain parameters of the model change over time (see [our vignette on key features of SPARSEMODr](key-features.html) for more details). We demonstrate this below. In this particular example, we allow the time-varying R0 to change daily in out model, which forces $\hat{\beta}$ to fluctuate daily. In this particular example, we apply sinusoidal-forcing, allowing R0 to peak in the fall-winter months and wane in the spring-summer months. We'll use this particular forcing equation;
-$$R_{0}(t) = \bar{R}_{0} (1 + cos(\frac{2 \pi t}{t_{\text{mode}}}))$$
-In this case we have an average R0 and $t_{\text{mode}}$ controls the number of R0 cycles per year.
+One of the benefits of the SPARSEMODr design is that the user can specify how certain parameters of the model change over time (see [our vignette on key features of SPARSEMODr](key-features.html) for more details). We demonstrate this below. In this particular example, we allow the time-varying transmission rate, $\beta_{t}$ to change daily. In this particular example, we apply sinusoidal-forcing, assuming $\beta_{t}$ peaks in the fall-winter months and wanes in the spring-summer months. We'll use this particular forcing equation;
+$$\beta(t) = \bar{\beta} (1 + cos(\frac{2 \pi t}{t_{\text{mode}}}))$$
+In this case we have an average $\beta$, $\bar{\beta}$, and $t_{\text{mode}}$ controls the number of cycles per year.
 
-We'll use the $\texttt{time_windows()}$ function to generate a pattern of time-varying R0 that looks like the following:
+We'll use the $\texttt{time_windows()}$ function to generate a pattern of time-varying $\beta$ that looks like the following:
 
 ```{r, , fig.width=7}
 # Set up the dates of change:
@@ -135,22 +159,22 @@ day_ID = rep(c(1:365), times = n_years)
 date_seq = seq.Date(mdy("1-1-90"),
                     mdy("1-1-90") + length(day_ID) - 1,
                     by = "1 day")
-# R0 peaks once every how many days?
+# \beta peaks once every how many days?
 t_mode = 365
-# Sinusoidal forcing in R0:
-r0_base = 2.5
-r0_seq = r0_base * (1 + cos((2*pi*day_ID)/t_mode))
+# Sinusoidal forcing in \beta:
+beta_base = 0.14
+beta_seq = beta_base * (1 + cos((2*pi*day_ID)/t_mode))
 
 # Data frame for plotting:
-r0_seq_df = data.frame(r0_seq, date_seq)
+beta_seq_df = data.frame(beta_seq, date_seq)
 date_breaks = seq(date_seq[1],
                   date_seq[1] + years(n_years),
                   by = "5 years")
 
-ggplot(r0_seq_df) +
-  geom_path(aes(x = date_seq, y = r0_seq)) +
+ggplot(beta_seq_df) +
+  geom_path(aes(x = date_seq, y = beta_seq)) +
   scale_x_date(breaks = date_breaks, date_labels = "%Y") +
-  labs(x="", y="Time-varying R0") +
+  labs(x="", y=expression("Time-varying "*beta*", ("*beta[t]*")")) +
   # THEME
   theme_classic()+
   theme(
@@ -162,26 +186,31 @@ ggplot(r0_seq_df) +
 ```
 
 
-We'll change the R0, but leave the migration parameters constant.
+We'll assume that all populations have the same pattern of $\beta_{t}$, and we'll leave the migration parameters constant.
 
 ```{r}
 # Set up the time_windows() function
 n_days = length(date_seq)
 
-# Time-varying R0
-changing_r0 = r0_seq
+# Time-varying beta
+changing_beta = vector("list", length = n_pop)
+for (this_pop in 1:n_pop) {
+    changing_beta[[this_pop]] <- beta_seq
+}
+
+
 # Migration rate
 changing_m = rep(1/10.0, times = n_days)
 # Migration range
-changing_dist_param = rep(100, times = n_days)
+changing_dist_phi = rep(100, times = n_days)
 # Immigration (none)
 changing_imm_frac = rep(0, times = n_days)
 
 # Create the time_window() object
 tw = time_windows(
-  r0 = changing_r0,
+  beta = changing_beta,
   m = changing_m,
-  dist_param = changing_dist_param,
+  dist_phi = changing_dist_phi,
   imm_frac = changing_imm_frac,
   daily = date_seq
 )
@@ -203,7 +232,7 @@ seir_control = seir_control(
 
 Now we have all of the input elements needed to run SPARSEMODr's SEIR model. Below we demonstrate a workflow to generate stochastic realizations of the model in parallel. Notice that in this host species, breeding (and mortality) occurs on average once every two years.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # How many realizations of the model?
 n_realz = 30
 
@@ -222,7 +251,7 @@ model_output =
       input_realz_seeds = input_realz_seeds,
       # OTHER MODEL PARAMS
       trans_type = 1, # freq-dependent trans
-      stoch_sd = 0.75,  # stoch transmission sd,
+      stoch_sd = 0.85,  # stoch transmission sd,
       control = seir_control    # data structure with seir-specific params
   )
 
@@ -266,11 +295,9 @@ pops_sum_df =
 
 glimpse(pops_sum_df)
 
-
-
 ```
 
-Now we'll create a simple figure to visualize the stochastic realizations over time.
+Now we'll create a simple figure to visualize the stochastic realizations over time. You can see that, due to probabilistic events, the pathogen burns out (line at zero) in some realizations, and there is variation in peak number of infections during epidemics. 
 
 ```{r, fig.height=5, fig.width=7, fig.align='center'}
 
@@ -297,8 +324,12 @@ plot_base =
 
 plot_allyears =  
   ggplot(pops_sum_df) +
-  geom_path(aes(x = date, y = I, group = iter),
-            color = "black", alpha = 0.25) +
+  geom_path(aes(x = date, y = I, group = iter, color = region),
+            alpha = 0.25) +
+  # Colors per region:
+  scale_color_manual(values = c("#00AFBB", "#D16103", 
+                                "#E69F00", "#4E84C4")) +
+  guides(color="none") +
   facet_wrap(~region, scales = "fixed", ncol = 2,
              labeller = labeller(region = region_labs)) +
   plot_base
