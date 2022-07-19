@@ -4,7 +4,7 @@
 SPARSE-MOD: Overview 
 -------------------------------------
 
-SPARSE-MOD stands for **SPA**tial **R**esolution-**SE**nsitive **M**odels of **O**utbreak **D**ynamics. Our goal with this R package is to offer a framework for simulating the dynamics of stochastic and spatially-explicit models of infectious disease. As we develop the package, our goal is to add more model structures and more user-control of the model dynamics. Our SPARSEMODr package offers several key features that should make it particularly relevant for pedogogical and practical use. See [our COVID-19 model vignette](covid-19-model.html) and [our SEIR model vignette](seir-model.html)for detailed walk-throughs of how to run the model(s), to plot the output, and to simulate customized time-windows.
+SPARSE-MOD stands for **SPA**tial **R**esolution-**SE**nsitive **M**odels of **O**utbreak **D**ynamics. Our goal with this R package is to offer a framework for simulating the dynamics of stochastic and spatially-explicit models of infectious disease. As we develop the package, our goal is to add more model structures and more user-control of the model dynamics. Our SPARSEMODr package offers several key features that should make it particularly relevant for pedogogical and practical use. See [our COVID-19 model vignette](https://github.com/NAU-CCL/SPARSEMODr/blob/main/vignettes/covid-19-model.Rmd) and [our SEIR model vignette](https://github.com/NAU-CCL/SPARSEMODr/blob/main/vignettes/seir-model.Rmd)for detailed walk-throughs of how to run the model(s), to plot the output, and to simulate customized time-windows.
 
 -  **Spatially explicit models** that allow user-defined meta-population characteristics and a customizable dispersal kernel.
 

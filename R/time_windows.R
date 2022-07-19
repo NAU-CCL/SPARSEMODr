@@ -46,7 +46,7 @@ time_windows <- function(beta=NULL,
     if (is.null(imm_frac)) stop("Parameter imm_frac cannot be omitted.")
 
     # Allows users to provide a single beta vector
-    if (class(beta) != "list") {
+    if (!is.list(beta)) {
         temp_beta <- beta
         beta <- list()
         beta[[1]] <- temp_beta

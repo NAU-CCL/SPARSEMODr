@@ -24,7 +24,7 @@ library(tidyverse)
 library(viridis)
 library(lubridate)
 
-# To run in parallel, use, e.g., plan(multisession):
+# To run in parallel, use, e.g., plan("multisession"):
 future::plan("sequential")
 ```
 
